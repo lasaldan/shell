@@ -75,11 +75,8 @@ void mySigIntHandler()
 // 6. If found, perform a function variable call passing argc/argv variables.
 // 7. Supports background execution of non-intrinsic commands.
 //
-int P1_shellTask(int argc, char* argv[])
+int P1_shellTask(int argc, char **argv)
 {
-	int i, found, newArgc;					// # of arguments
-	char** newArgv;							// pointers to arguments
-
 	// initialize shell commands
 	commands = P1_init();					// init shell commands
 
@@ -98,6 +95,60 @@ int P1_shellTask(int argc, char* argv[])
 
 		SWAP										// do context switch
 
+		char** maxArgv = (char**) malloc(MAX_ARGS);
+		int newArgc = 1; // the line isn't blank, so there must be one arg
+		int inBufferLength = strlen(inBuffer);
+		char* copy = malloc( sizeof(*copy) * ( strlen(inBuffer) + 1 ) );
+
+		// copy arguments from inBuffer into malloc'd memory
+		strcpy ( copy, inBuffer );
+
+		// set first parameter of argv to beginning of malloc'd string
+		maxArgv[0] = &copy[0];
+
+		int i;
+		bool inQuotedParam = FALSE;
+		bool inParam = TRUE;
+		for( i=0; i < inBufferLength; i++)
+		{
+			// Found a new param?
+			if(copy[i] != ' ' && !inParam)
+			{
+				maxArgv[newArgc] = &copy[i];
+				inParam = TRUE;
+
+				// Is this a quoted param?
+				if(copy[i] == '"')
+					inQuotedParam = TRUE;
+
+				newArgc++;
+			}
+
+			// Is this the end of a Quoted Param?
+			else if(copy[i] == '"' && inQuotedParam)
+			{
+				inQuotedParam = FALSE;
+				inParam = FALSE;
+			}
+
+			// Is this a param divider?
+			if(copy[i] == ' ' && !inQuotedParam)
+			{
+				copy[i] = 0;
+				inParam = FALSE;
+			}
+		}
+
+		for( i=0; i < newArgc; i++ )
+		{
+			printf("\nParam %i: %s", i, maxArgv[i]);
+		}
+		//printf("\n%s", copy);
+		//printf("\n%s", maxArgv[0]);
+/*
+
+		int i, found, newArgc;					// # of arguments
+		char** newArgv;							// pointers to arguments
 		{
 			// ?? >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 			// ?? parse command line into argc, argv[] variables
@@ -136,6 +187,7 @@ int P1_shellTask(int argc, char* argv[])
 
 		// ?? free up any malloc'd argv parameters
 		for (i=0; i<INBUF_SIZE; i++) inBuffer[i] = 0;
+		 */
 	}
 	return 0;						// terminate task
 } // end P1_shellTask
@@ -145,7 +197,7 @@ int P1_shellTask(int argc, char* argv[])
 // ***********************************************************************
 // P1 Project
 //
-int P1_project1(int argc, char* argv[])
+int P1_project1(int argc, char **argv)
 {
 	SWAP										// do context switch
 
@@ -158,7 +210,7 @@ int P1_project1(int argc, char* argv[])
 // ***********************************************************************
 // quit command
 //
-int P1_quit(int argc, char* argv[])
+int P1_quit(int argc, char **argv)
 {
 	int i;
 
@@ -182,7 +234,7 @@ int P1_quit(int argc, char* argv[])
 // **************************************************************************
 // lc3 command
 //
-int P1_lc3(int argc, char* argv[])
+int P1_lc3(int argc, char **argv)
 {
 	strcpy (argv[0], "0");
 	return lc3Task(argc, argv);
@@ -194,7 +246,7 @@ int P1_lc3(int argc, char* argv[])
 // ***********************************************************************
 // help command
 //
-int P1_help(int argc, char* argv[])
+int P1_help(int argc, char **argv)
 {
 	int i;
 

@@ -3,14 +3,14 @@
 #define __os345config_h__
 // ***********************************************************************
 //
-#define STARTUP_MSG	"CS345 W2015"
+#define STARTUP_MSG	"CS345 Su2015"
 
 // ***********************************************************************
 // Select development system environment here:
-#define DOS	0						// DOS
+#define DOS	1						// DOS
 #define GCC	0						// UNIX/Linux
 #define PPC	0						// Power PC
-#define MAC	1						// Mac
+#define MAC	0						// Mac
 #define NET	0						// .NET
 
 // ***********************************************************************
@@ -19,7 +19,7 @@
 #include <conio.h>
 #define INIT_OS
 #define GET_CHAR		(kbhit()?getch():0)
-#define SET_STACK(s)	_asm("movl _temp,%esp");
+#define SET_STACK(s)	asm("movl _temp,%esp");
 #define RESTORE_OS
 #define LITTLE	1
 #define CLEAR_SCREEN	system("cls");
