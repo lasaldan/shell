@@ -1,0 +1,183 @@
+# depslib dependency file v1.0
+1435099720 source:/Users/Daniel/workspace/cs345/shell/main.c
+	<stdio.h>
+	<stdlib.h>
+
+1435098863 source:/Users/Daniel/workspace/cs345/shell/os345.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+	"os345signals.h"
+	"os345config.h"
+	"os345lc3.h"
+	"os345fat.h"
+
+1435098949 /Users/Daniel/workspace/cs345/shell/os345.h
+
+1435098964 /Users/Daniel/workspace/cs345/shell/os345signals.h
+
+1435099536 /Users/Daniel/workspace/cs345/shell/os345config.h
+	<conio.h>
+	<fcntl.h>
+	<conio.h>
+	<fcntl.h>
+	<fcntl.h>
+
+1435099836 /Users/Daniel/workspace/cs345/shell/os345lc3.h
+
+1435099867 /Users/Daniel/workspace/cs345/shell/os345fat.h
+
+1435099875 source:/Users/Daniel/workspace/cs345/shell/os345fat.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345fat.h"
+
+1435098905 source:/Users/Daniel/workspace/cs345/shell/os345interrupts.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+	"os345config.h"
+	"os345signals.h"
+
+1435099842 source:/Users/Daniel/workspace/cs345/shell/os345lc3.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345lc3.h"
+	"os345fat.h"
+
+1435099849 source:/Users/Daniel/workspace/cs345/shell/os345mmu.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345lc3.h"
+
+1435099156 source:/Users/Daniel/workspace/cs345/shell/os345p1.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345signals.h"
+
+1435099795 source:/Users/Daniel/workspace/cs345/shell/os345p2.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	<time.h>
+	"os345.h"
+	"os345signals.h"
+
+1435099808 source:/Users/Daniel/workspace/cs345/shell/os345p3.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+	"os345park.h"
+
+1435099823 /Users/Daniel/workspace/cs345/shell/os345park.h
+
+1435099829 source:/Users/Daniel/workspace/cs345/shell/os345p4.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345lc3.h"
+
+1435099855 source:/Users/Daniel/workspace/cs345/shell/os345p5.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+
+1435099862 source:/Users/Daniel/workspace/cs345/shell/os345p6.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<time.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345fat.h"
+
+1435099816 source:/Users/Daniel/workspace/cs345/shell/os345park.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+	"os345park.h"
+
+1435098912 source:/Users/Daniel/workspace/cs345/shell/os345semaphores.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+
+1435098932 source:/Users/Daniel/workspace/cs345/shell/os345signals.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<assert.h>
+	"os345.h"
+	"os345signals.h"
+
+1435098941 source:/Users/Daniel/workspace/cs345/shell/os345tasks.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<ctype.h>
+	<setjmp.h>
+	<time.h>
+	<assert.h>
+	"os345.h"
+	"os345signals.h"
+
