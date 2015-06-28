@@ -46,7 +46,8 @@ int createTask(char* name,						// task name
 					int argc,					// task argument count
 					char* argv[])				// task argument pointers
 {
-	int tid;
+	int tid, i;
+	char** newArgv = (char**) malloc(argc);
 
 	// find an open tcb entry slot
 	for (tid = 0; tid < MAX_TASKS; tid++)
@@ -72,8 +73,15 @@ int createTask(char* name,						// task name
 			tcb[tid].parent = curTask;		// parent
 			tcb[tid].argc = argc;			// argument count
 
-			// ?? malloc new argv parameters
-			tcb[tid].argv = argv;			// argument pointers
+			// malloc new argv parameters
+			for(i=0; i < argc; i++)
+			{
+				char* arg = malloc( sizeof(*arg) * ( strlen(argv[i]) + 1 ) );
+				strcpy ( arg, argv[i] );
+				newArgv[i] = arg;
+			}
+
+			tcb[tid].argv = newArgv;			// argument pointers
 
 			tcb[tid].event = 0;				// suspend semaphore
 			tcb[tid].RPT = 0;					// root page table (project 5)
@@ -150,6 +158,7 @@ int sysKillTask(int taskId)
 {
 	Semaphore* sem = semaphoreList;
 	Semaphore** semLink = &semaphoreList;
+	int i;
 
 	// assert that you are not pulling the rug out from under yourself!
 	assert("sysKillTask Error" && tcb[taskId].name && superMode);
@@ -172,6 +181,13 @@ int sysKillTask(int taskId)
 			semLink = (Semaphore**)&sem->semLink;
 		}
 	}
+
+	// Free malloc'd memory
+	for( i=0; i<tcb[taskId].argc; i++)
+	{
+		free(tcb[taskId].argv[i]);
+	}
+	free(*(tcb[taskId].argv));
 
 	// ?? delete task from system queues
 

@@ -106,6 +106,20 @@ static void keyboard_isr()
 				break;
 			}
 
+			case '\b':
+			{
+				if(inBufIndx == 0)
+					printf("%c",'\a');
+				else
+				{
+					inBufIndx--;
+					printf("%c",'\b');
+					printf(" ");
+					printf("%c",'\b');
+				}
+				break;
+			}
+
 			case 0x18:						// ^x
 			{
 				inBufIndx = 0;
@@ -117,9 +131,14 @@ static void keyboard_isr()
 
 			default:
 			{
-				inBuffer[inBufIndx++] = inChar;
-				inBuffer[inBufIndx] = 0;
-				printf("%c", inChar);		// echo character
+				if( inBufIndx == INBUF_SIZE )
+					printf("%c",'\a');
+				else
+				{
+					inBuffer[inBufIndx++] = inChar;
+					inBuffer[inBufIndx] = 0;
+					printf("%c", inChar);		// echo character
+				}
 			}
 		}
 	}

@@ -32,7 +32,7 @@ extern jmp_buf reset_context;
 // -----
 
 
-#define NUM_COMMANDS 50
+#define NUM_COMMANDS 51
 typedef struct								// command struct
 {
 	char* command;
@@ -80,6 +80,7 @@ int P1_shellTask(int argc, char **argv)
 	int i;
 	bool inQuotedParam;
 	bool inParam;
+	bool backgroundTask;
 	// initialize shell commands
 	commands = P1_init();					// init shell commands
 
@@ -90,6 +91,7 @@ int P1_shellTask(int argc, char **argv)
 	{
 		inQuotedParam = FALSE; // first param can't be in quotes
 		inParam = TRUE;
+		backgroundTask = FALSE;
 
 		// output prompt
 		if (diskMounted) printf("\n%s>>", dirPath);
@@ -107,7 +109,7 @@ int P1_shellTask(int argc, char **argv)
 			printf("\nCommands cannot start with a quote");
 			continue;
 		}
-		printf("[%s]", inBuffer);
+		//printf("[%s]", inBuffer);
 
 		SWAP										// do context switch
 
@@ -122,13 +124,19 @@ int P1_shellTask(int argc, char **argv)
 		// set first parameter of argv to beginning of malloc'd string
 		maxArgv[0] = &copy[0];
 
+		if(inBuffer[inBufferLength-1] == '&')
+		{
+			backgroundTask = TRUE;
+			inBuffer[inBufferLength] = 0;
+		}
+
 		// Parse Commandline Parameters
 		for( i=0; i < inBufferLength; i++)
 		{
 			// Found a new param?
 			if(copy[i] != ' ' && !inParam)
 			{
-				// Is this a quoted param?
+				// Is this the start of a quoted param?
 				if(copy[i] == '"')
 				{
 					inQuotedParam = TRUE;
@@ -183,8 +191,15 @@ int P1_shellTask(int argc, char **argv)
 				!strcmp(newArgv[0], commands[i]->shortcut))
 			{
 				// command found
-				int retValue = (*commands[i]->func)(newArgc, newArgv);
-				if (retValue) printf("\nCommand Error %d", retValue);
+				if(backgroundTask)
+				{
+					createTask(commands[i]->command, commands[i]->func, MED_PRIORITY, newArgc, newArgv);
+				}
+				else
+				{
+					int retValue = (*commands[i]->func)(newArgc, newArgv);
+					if (retValue) printf("\nCommand Error %d", retValue);
+				}
 				found = TRUE;
 				break;
 			}
@@ -272,6 +287,25 @@ int P1_args(int argc, char **argv)
 
 
 
+// **************************************************************************
+// **************************************************************************
+// add command
+//
+int P1_add(int argc, char **argv)
+{
+	int i;
+	int sum = 0;
+	for( i=0; i < argc; i++ )
+	{
+		sum += (int)strtol(argv[i], NULL, 0);
+	}
+	printf("\n%i",sum);
+	return 0;
+} // end P1_add
+
+
+
+
 
 // ***********************************************************************
 // ***********************************************************************
@@ -335,6 +369,7 @@ Command** P1_init()
 	commands[i++] = newCommand("help", "he", P1_help, "OS345 Help");
 	commands[i++] = newCommand("lc3", "lc3", P1_lc3, "Execute LC3 program");
 	commands[i++] = newCommand("args", "ar", P1_args, "Print Arguments");
+	commands[i++] = newCommand("add", "add", P1_add, "Adds paramters");
 
 	// P2: Tasking
 	commands[i++] = newCommand("project2", "p2", P2_project2, "P2: Tasking");
