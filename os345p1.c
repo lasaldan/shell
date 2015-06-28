@@ -29,6 +29,7 @@
 // power down code from 'os345.h' that indicates the desired behavior.
 
 extern jmp_buf reset_context;
+extern int curTask;
 // -----
 
 
@@ -59,7 +60,13 @@ Command* newCommand(char*, char*, int (*func)(int, char**), char*);
 
 void mySigIntHandler()
 {
-	printf("Hellomynameisinigomontoyayoukilledmyfatherpreparetodie");
+	sigSignal(-1, mySIGTERM);
+	return;
+}
+
+void mySigTermHandler()
+{
+	killTask(curTask);
 }
 
 // ***********************************************************************
@@ -85,11 +92,12 @@ int P1_shellTask(int argc, char **argv)
 	commands = P1_init();					// init shell commands
 
 	sigAction(mySigIntHandler, mySIGINT);
+	sigAction(mySigTermHandler, mySIGTERM);
 
 
 	while (1)
 	{
-		inQuotedParam = FALSE; // first param can't be in quotes
+		inQuotedParam = FALSE;
 		inParam = TRUE;
 		backgroundTask = FALSE;
 
@@ -99,16 +107,6 @@ int P1_shellTask(int argc, char **argv)
 
 		SEM_WAIT(inBufferReady);			// wait for input buffer semaphore
 		if (!inBuffer[0]) continue;		// ignore blank lines
-		if (inBuffer[0] == ' ')
-		{
-			printf("\nCommands cannot start with whitespace");
-			continue;
-		}
-		if (inBuffer[0] == '"')
-		{
-			printf("\nCommands cannot start with a quote");
-			continue;
-		}
 		//printf("[%s]", inBuffer);
 
 		SWAP										// do context switch
@@ -129,6 +127,8 @@ int P1_shellTask(int argc, char **argv)
 			backgroundTask = TRUE;
 			inBuffer[inBufferLength] = 0;
 		}
+
+		SWAP
 
 		// Parse Commandline Parameters
 		for( i=0; i < inBufferLength; i++)
@@ -174,6 +174,8 @@ int P1_shellTask(int argc, char **argv)
 
 		}
 
+		SWAP
+
 		// Malloc just enough space for the new argv pointers
 		char** newArgv = (char**) malloc(newArgc);
 
@@ -182,6 +184,8 @@ int P1_shellTask(int argc, char **argv)
 		{
 			newArgv[i] = maxArgv[i];
 		}
+
+		SWAP
 
 		// Search for matching command
 		int found;
@@ -204,6 +208,9 @@ int P1_shellTask(int argc, char **argv)
 				break;
 			}
 		}
+
+		SWAP
+
 		if (!found)	printf("\nInvalid command!");
 
 		free (copy);
@@ -272,15 +279,13 @@ int P1_lc3(int argc, char **argv)
 int P1_args(int argc, char **argv)
 {
 	int i;
+	printf("\n");
 	for( i=0; i < argc; i++ )
 	{
-		printf("\n");
-		if(i == 0)
-			printf("Command: %s", argv[i]);
-		else if(strchr(argv[i],' '))
-			printf("Param %i: \"%s\" ", i, argv[i]);
+		if(strchr(argv[i],' '))
+			printf("\"%s\" ", argv[i]);
 		else
-			printf("Param %i: %s ", i, argv[i]);
+			printf("%s ", argv[i]);
 	}
 	return 0;
 } // end P1_args
@@ -302,9 +307,6 @@ int P1_add(int argc, char **argv)
 	printf("\n%i",sum);
 	return 0;
 } // end P1_add
-
-
-
 
 
 // ***********************************************************************
