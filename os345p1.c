@@ -32,7 +32,7 @@ extern jmp_buf reset_context;
 // -----
 
 
-#define NUM_COMMANDS 49
+#define NUM_COMMANDS 50
 typedef struct								// command struct
 {
 	char* command;
@@ -77,6 +77,9 @@ void mySigIntHandler()
 //
 int P1_shellTask(int argc, char **argv)
 {
+	int i;
+	bool inQuotedParam;
+	bool inParam;
 	// initialize shell commands
 	commands = P1_init();					// init shell commands
 
@@ -85,17 +88,30 @@ int P1_shellTask(int argc, char **argv)
 
 	while (1)
 	{
+		inQuotedParam = FALSE; // first param can't be in quotes
+		inParam = TRUE;
+
 		// output prompt
 		if (diskMounted) printf("\n%s>>", dirPath);
 		else printf("\n%ld>>", swapCount);
 
 		SEM_WAIT(inBufferReady);			// wait for input buffer semaphore
 		if (!inBuffer[0]) continue;		// ignore blank lines
-		// printf("%s", inBuffer);
+		if (inBuffer[0] == ' ')
+		{
+			printf("\nCommands cannot start with whitespace");
+			continue;
+		}
+		if (inBuffer[0] == '"')
+		{
+			printf("\nCommands cannot start with a quote");
+			continue;
+		}
+		printf("[%s]", inBuffer);
 
 		SWAP										// do context switch
 
-		char** maxArgv = (char**) malloc(MAX_ARGS);
+		char** maxArgv[MAX_ARGS];
 		int newArgc = 1; // the line isn't blank, so there must be one arg
 		int inBufferLength = strlen(inBuffer);
 		char* copy = malloc( sizeof(*copy) * ( strlen(inBuffer) + 1 ) );
@@ -106,75 +122,65 @@ int P1_shellTask(int argc, char **argv)
 		// set first parameter of argv to beginning of malloc'd string
 		maxArgv[0] = &copy[0];
 
-		int i;
-		bool inQuotedParam = FALSE;
-		bool inParam = TRUE;
+		// Parse Commandline Parameters
 		for( i=0; i < inBufferLength; i++)
 		{
 			// Found a new param?
 			if(copy[i] != ' ' && !inParam)
 			{
-				maxArgv[newArgc] = &copy[i];
-				inParam = TRUE;
-
 				// Is this a quoted param?
 				if(copy[i] == '"')
+				{
 					inQuotedParam = TRUE;
-
-				newArgc++;
+					copy[i] = 0;
+				}
+				else
+				{
+					inParam = TRUE;
+					maxArgv[newArgc] = &copy[i];
+					newArgc++;
+				}
 			}
 
 			// Is this the end of a Quoted Param?
 			else if(copy[i] == '"' && inQuotedParam)
 			{
+				//remove quote from param
+				copy[i] = 0;
 				inQuotedParam = FALSE;
 				inParam = FALSE;
 			}
 
-			// Is this a param divider?
-			if(copy[i] == ' ' && !inQuotedParam)
+			// Is this the end of a paramter?
+			else if(copy[i] == ' ' && !inQuotedParam)
 			{
 				copy[i] = 0;
 				inParam = FALSE;
 			}
-		}
 
-		for( i=0; i < newArgc; i++ )
-		{
-			printf("\nParam %i: %s", i, maxArgv[i]);
-		}
-		//printf("\n%s", copy);
-		//printf("\n%s", maxArgv[0]);
-/*
-
-		int i, found, newArgc;					// # of arguments
-		char** newArgv;							// pointers to arguments
-		{
-			// ?? >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-			// ?? parse command line into argc, argv[] variables
-			// ?? must use malloc for argv storage!
-			static char *sp, *myArgv[MAX_ARGS];
-
-			// init arguments
-			newArgc = 1;
-			myArgv[0] = sp = inBuffer;				// point to input string
-			for (i=1; i<MAX_ARGS; i++)
-				myArgv[i] = 0;
-
-			// parse input string
-			while ((sp = strchr(sp, ' ')))
+			// Must be part of a command/non-quoted-param
+			if(!inQuotedParam)
 			{
-				*sp++ = 0;
-				myArgv[newArgc++] = sp;
+				copy[i] = (char) tolower(copy[i]);
 			}
-			newArgv = myArgv;
-		}	// ?? >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-		// look for command
+		}
+
+		// Malloc just enough space for the new argv pointers
+		char** newArgv = (char**) malloc(newArgc);
+
+		// Copy the pointers to the new malloc'd memory
+		for( i=0; i < newArgc; i++)
+		{
+			newArgv[i] = maxArgv[i];
+		}
+
+		// Search for matching command
+		int found;
 		for (found = i = 0; i < NUM_COMMANDS; i++)
 		{
 			if (!strcmp(newArgv[0], commands[i]->command) ||
-				 !strcmp(newArgv[0], commands[i]->shortcut))
+				!strcmp(newArgv[0], commands[i]->shortcut))
 			{
 				// command found
 				int retValue = (*commands[i]->func)(newArgc, newArgv);
@@ -185,9 +191,11 @@ int P1_shellTask(int argc, char **argv)
 		}
 		if (!found)	printf("\nInvalid command!");
 
-		// ?? free up any malloc'd argv parameters
+		free (copy);
+		free (*newArgv);
+
 		for (i=0; i<INBUF_SIZE; i++) inBuffer[i] = 0;
-		 */
+
 	}
 	return 0;						// terminate task
 } // end P1_shellTask
@@ -239,6 +247,29 @@ int P1_lc3(int argc, char **argv)
 	strcpy (argv[0], "0");
 	return lc3Task(argc, argv);
 } // end P1_lc3
+
+
+
+// **************************************************************************
+// **************************************************************************
+// args command
+//
+int P1_args(int argc, char **argv)
+{
+	int i;
+	for( i=0; i < argc; i++ )
+	{
+		printf("\n");
+		if(i == 0)
+			printf("Command: %s", argv[i]);
+		else if(strchr(argv[i],' '))
+			printf("Param %i: \"%s\" ", i, argv[i]);
+		else
+			printf("Param %i: %s ", i, argv[i]);
+	}
+	return 0;
+} // end P1_args
+
 
 
 
@@ -303,6 +334,7 @@ Command** P1_init()
 	commands[i++] = newCommand("project1", "p1", P1_project1, "P1: Shell");
 	commands[i++] = newCommand("help", "he", P1_help, "OS345 Help");
 	commands[i++] = newCommand("lc3", "lc3", P1_lc3, "Execute LC3 program");
+	commands[i++] = newCommand("args", "ar", P1_args, "Print Arguments");
 
 	// P2: Tasking
 	commands[i++] = newCommand("project2", "p2", P2_project2, "P2: Tasking");
