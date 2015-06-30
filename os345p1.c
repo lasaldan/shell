@@ -30,6 +30,7 @@
 
 extern jmp_buf reset_context;
 extern int curTask;
+extern TCB tcb;
 // -----
 
 
@@ -69,6 +70,17 @@ void mySigTermHandler()
 	killTask(curTask);
 }
 
+void mySigWaitHandler()
+{
+	sigSignal(-1, mySIGSTOP);
+	return;
+}
+
+void mySigContHandler()
+{
+	return;
+}
+
 // ***********************************************************************
 // myShell - command line interpreter
 //
@@ -93,7 +105,8 @@ int P1_shellTask(int argc, char **argv)
 
 	sigAction(mySigIntHandler, mySIGINT);
 	sigAction(mySigTermHandler, mySIGTERM);
-
+	sigAction(mySigWaitHandler, mySIGTSTP);
+	sigAction(mySigContHandler, mySIGCONT);
 
 	while (1)
 	{
@@ -119,13 +132,15 @@ int P1_shellTask(int argc, char **argv)
 		// copy arguments from inBuffer into malloc'd memory
 		strcpy ( copy, inBuffer );
 
+		SWAP
+
 		// set first parameter of argv to beginning of malloc'd string
 		maxArgv[0] = &copy[0];
 
 		if(inBuffer[inBufferLength-1] == '&')
 		{
 			backgroundTask = TRUE;
-			inBuffer[inBufferLength] = 0;
+			copy[inBufferLength-1] = ' '; // Allow "command&" by removing &
 		}
 
 		SWAP

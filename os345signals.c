@@ -49,6 +49,18 @@ int signals(void)
 			(*tcb[curTask].sigTermHandler)();
 			return 1;
 		}
+		if (tcb[curTask].signal & mySIGTSTP)
+		{
+			tcb[curTask].signal &= ~mySIGTSTP;
+			(*tcb[curTask].sigTstpHandler)();
+			return 1;
+
+		}
+		if (tcb[curTask].signal & mySIGCONT)
+		{
+			tcb[curTask].signal &= ~mySIGCONT;
+			(*tcb[curTask].sigContHandler)();
+		}
 	}
 	return 0;
 }
@@ -65,6 +77,16 @@ int sigAction(void (*sigHandler)(void), int sig)
 		case mySIGINT:
 		{
 			tcb[curTask].sigIntHandler = sigHandler;		// mySIGINT handler
+			return 0;
+		}
+		case mySIGTSTP:
+		{
+			tcb[curTask].sigTstpHandler = sigHandler;
+			return 0;
+		}
+		case mySIGCONT:
+		{
+			tcb[curTask].sigContHandler = sigHandler;
 			return 0;
 		}
 		case mySIGTERM:
@@ -120,6 +142,18 @@ void defaultSigTermHandler(void)
 	return;
 }
 
+void defaultSigTstpHandler(void)
+{
+	printf("\ndefaultSigTstpHandler");
+	return;
+}
+
+void defaultSigContHandler(void)
+{
+	printf("\ndefaultSigContHandler");
+	return;
+}
+
 
 void createTaskSigHandlers(int tid)
 {
@@ -129,11 +163,15 @@ void createTaskSigHandlers(int tid)
 		// inherit parent signal handlers
 		tcb[tid].sigIntHandler = tcb[curTask].sigIntHandler;			// mySIGINT handler
 		tcb[tid].sigTermHandler = tcb[curTask].sigTermHandler;
+		tcb[tid].sigTstpHandler = tcb[curTask].sigTstpHandler;
+		tcb[tid].sigContHandler = tcb[curTask].sigContHandler;
 	}
 	else
 	{
 		// otherwise use defaults
 		tcb[tid].sigIntHandler = defaultSigIntHandler;			// task mySIGINT handler
 		tcb[tid].sigTermHandler = defaultSigTermHandler;
+		tcb[tid].sigTstpHandler = defaultSigTstpHandler;
+		tcb[tid].sigContHandler = defaultSigContHandler;
 	}
 }

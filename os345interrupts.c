@@ -60,6 +60,7 @@ extern int lastPollClock;			// last pollClock
 
 extern int superMode;						// system mode
 
+extern TCB tcb[];
 
 // **********************************************************************
 // **********************************************************************
@@ -137,8 +138,15 @@ static void keyboard_isr()
 
 			case 0x12:						// ^r
 			{
+				int t;
 				sigSignal(-1, mySIGCONT);
-				//(Clear SIGSTOP and SIGTSTP in all tasks)
+
+				for (t=0; t<MAX_TASKS; t++)
+				{
+					tcb[t].signal &= ~mySIGSTOP;
+					tcb[t].signal &= ~mySIGTSTP;
+				}
+				break;
 			}
 
 			default:
