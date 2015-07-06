@@ -95,6 +95,7 @@ static void keyboard_isr()
 	assert("keyboard_isr Error" && superMode);
 
 	semSignal(charReady);					// SIGNAL(charReady) (No Swap)
+
 	if (charFlag == 0)
 	{
 		switch (inChar)
@@ -108,12 +109,14 @@ static void keyboard_isr()
 			}
 
 			case '\b':
+			case 0x7f:
 			{
 				if(inBufIndx == 0)
 					printf("%c",'\a');
 				else
 				{
 					inBufIndx--;
+					inBuffer[inBufIndx] = '\0';
 					printf("%c",'\b');
 					printf(" ");
 					printf("%c",'\b');

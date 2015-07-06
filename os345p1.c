@@ -96,10 +96,15 @@ void mySigContHandler()
 //
 int P1_shellTask(int argc, char **argv)
 {
-	int i;
+	int i, newArgc, inBufferLength;
 	bool inQuotedParam;
 	bool inParam;
 	bool backgroundTask;
+
+	char** maxArgv[MAX_ARGS];
+	char** newArgv;
+	char* copy;
+
 	// initialize shell commands
 	commands = P1_init();					// init shell commands
 
@@ -124,10 +129,9 @@ int P1_shellTask(int argc, char **argv)
 
 		SWAP										// do context switch
 
-		char** maxArgv[MAX_ARGS];
-		int newArgc = 1; // the line isn't blank, so there must be one arg
-		int inBufferLength = strlen(inBuffer);
-		char* copy = malloc( sizeof(*copy) * ( strlen(inBuffer) + 1 ) );
+		newArgc = 1; // the line isn't blank, so there must be one arg
+		inBufferLength = strlen(inBuffer);
+		copy = malloc( sizeof(*copy) * ( strlen(inBuffer) + 1 ) );
 
 		// copy arguments from inBuffer into malloc'd memory
 		strcpy ( copy, inBuffer );
@@ -135,7 +139,7 @@ int P1_shellTask(int argc, char **argv)
 		SWAP
 
 		// set first parameter of argv to beginning of malloc'd string
-		maxArgv[0] = &copy[0];
+		maxArgv[0] = copy;
 
 		if(inBuffer[inBufferLength-1] == '&')
 		{
@@ -148,6 +152,11 @@ int P1_shellTask(int argc, char **argv)
 		// Parse Commandline Parameters
 		for( i=0; i < inBufferLength; i++)
 		{
+
+			// Ignore anything longer than max args
+			if(newArgc == MAX_ARGS)
+				continue;
+
 			// Found a new param?
 			if(copy[i] != ' ' && !inParam)
 			{
@@ -155,7 +164,7 @@ int P1_shellTask(int argc, char **argv)
 				if(copy[i] == '"')
 				{
 					inQuotedParam = TRUE;
-					copy[i] = 0;
+					copy[i] = '\0';
 				}
 				else
 				{
@@ -169,7 +178,7 @@ int P1_shellTask(int argc, char **argv)
 			else if(copy[i] == '"' && inQuotedParam)
 			{
 				//remove quote from param
-				copy[i] = 0;
+				copy[i] = '\0';
 				inQuotedParam = FALSE;
 				inParam = FALSE;
 			}
@@ -177,7 +186,7 @@ int P1_shellTask(int argc, char **argv)
 			// Is this the end of a paramter?
 			else if(copy[i] == ' ' && !inQuotedParam)
 			{
-				copy[i] = 0;
+				copy[i] = '\0';
 				inParam = FALSE;
 			}
 
@@ -192,7 +201,7 @@ int P1_shellTask(int argc, char **argv)
 		SWAP
 
 		// Malloc just enough space for the new argv pointers
-		char** newArgv = (char**) malloc(newArgc);
+		newArgv = (char**) malloc(newArgc * sizeof(char*) );
 
 		// Copy the pointers to the new malloc'd memory
 		for( i=0; i < newArgc; i++)
@@ -229,7 +238,7 @@ int P1_shellTask(int argc, char **argv)
 		if (!found)	printf("\nInvalid command!");
 
 		free (copy);
-		free (*newArgv);
+		free (newArgv);
 
 		for (i=0; i<INBUF_SIZE; i++) inBuffer[i] = 0;
 
@@ -298,9 +307,9 @@ int P1_args(int argc, char **argv)
 	for( i=0; i < argc; i++ )
 	{
 		if(strchr(argv[i],' '))
-			printf("\"%s\" ", argv[i]);
+			printf("%i:[\"%s\"] ", i, argv[i]);
 		else
-			printf("%s ", argv[i]);
+			printf("%i:[%s] ", i, argv[i]);
 	}
 	return 0;
 } // end P1_args

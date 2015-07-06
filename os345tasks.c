@@ -187,7 +187,7 @@ int sysKillTask(int taskId)
 	{
 		free(tcb[taskId].argv[i]);
 	}
-	free(*(tcb[taskId].argv));
+	free((tcb[taskId].argv));
 
 	// ?? delete task from system queues
 

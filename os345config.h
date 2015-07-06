@@ -7,10 +7,10 @@
 
 // ***********************************************************************
 // Select development system environment here:
-#define DOS	1						// DOS
+#define DOS	0						// DOS
 #define GCC	0						// UNIX/Linux
 #define PPC	0						// Power PC
-#define MAC	0						// Mac
+#define MAC	1						// Mac
 #define NET	0						// .NET
 
 // ***********************************************************************
