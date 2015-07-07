@@ -252,7 +252,7 @@ int ImAliveTask(int argc, char* argv[])
 	int i;							// local task variable
 	while (1)
 	{
-		printf("\n(%d) I'm Alive!", curTask);
+		printf("\n(%d) I'm Still Alive!", curTask);
 		for (i=0; i<100000; i++) swapTask();
 	}
 	return 0;						// terminate task
