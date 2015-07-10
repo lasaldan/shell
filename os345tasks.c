@@ -47,7 +47,7 @@ int createTask(char* name,						// task name
 					char* argv[])				// task argument pointers
 {
 	int tid, i;
-	char** newArgv = (char**) malloc(argc);
+	char** newArgv = (char**) malloc(argc * sizeof(char*));
 
 	// find an open tcb entry slot
 	for (tid = 0; tid < MAX_TASKS; tid++)
@@ -76,6 +76,7 @@ int createTask(char* name,						// task name
 			// malloc new argv parameters
 			for(i=0; i < argc; i++)
 			{
+				//printf("mallocing %i for %s\n", (strlen(argv[i]) + 1 ), argv[i]);
 				char* arg = malloc( sizeof(*arg) * ( strlen(argv[i]) + 1 ) );
 				strcpy ( arg, argv[i] );
 				newArgv[i] = arg;
@@ -94,6 +95,8 @@ int createTask(char* name,						// task name
 			tcb[tid].stack = malloc(STACK_SIZE * sizeof(int));
 
 			// ?? may require inserting task into "ready" queue
+			enque(rq, tid, priority);
+			//printf("\nNew Task [id: %i, name: %s]", t, tcb[t].name);
 
 			if (tid) swapTask();				// do context switch (if not cli)
 			return tid;							// return tcb index (curTask)
@@ -190,6 +193,8 @@ int sysKillTask(int taskId)
 	free((tcb[taskId].argv));
 
 	// ?? delete task from system queues
+	deque(rq,taskId);
+	deque(bq,taskId);
 
 	tcb[taskId].name = 0;			// release tcb slot
 	return 0;

@@ -83,7 +83,6 @@ bool diskMounted;					// disk has been mounted
 time_t oldTime1;					// old 1sec time
 clock_t myClkTime;
 clock_t myOldClkTime;
-int* rq;							// ready priority queue
 
 
 // **********************************************************************
@@ -101,6 +100,77 @@ int main(int argc, char* argv[])
 	// save context for restart (a system reset would return here...)
 	int resetCode = setjmp(reset_context);
 	superMode = TRUE;						// supervisor mode
+
+	rq = (int*)malloc(MAX_TASKS * sizeof(int));
+	rq[0] = 0;
+
+	bq = (int*)malloc(MAX_TASKS * sizeof(int));
+	bq[0] = 0;
+
+	/* Testing Code */
+/*
+	int i;
+
+	TID zero = 0;
+	TID one = 1;
+	TID two = 2;
+	TID three = 3;
+	TID four = 4;
+
+	tcb[0].name = "zero added (10)";
+	tcb[0].priority = 10;
+
+	tcb[1].name = "first added (9)";
+	tcb[1].priority = 9;
+
+	tcb[2].name = "second added (10)";
+	tcb[2].priority = 10;
+
+	tcb[3].name = "third added (6)";
+	tcb[3].priority = 6;
+
+	tcb[4].name = "fourth added (8)";
+	tcb[4].priority = 8;
+
+	enque(rq, zero, 10);
+	printf("\n\nNumber of tasks in queue: %i", rq[0]);
+	for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+	}
+
+	enque(rq, one, 9);
+	printf("\n\nNumber of tasks in queue: %i", rq[0]);
+	for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+	}
+
+	enque(rq, two, 10);
+	printf("\n\nNumber of tasks in queue: %i", rq[0]);
+	for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+	}
+
+	enque(rq, three, 6);
+	printf("\n\nNumber of tasks in queue: %i", rq[0]);
+	for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+	}
+
+	enque(rq, four, 8);
+	printf("\n\nNumber of tasks in queue: %i", rq[0]);
+	for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+	}
+
+	i = deque(rq, -1);
+	printf("\n\nDequeued!!!! Removed task %i %s", i, tcb[i].name);
+
+		printf("\n\nNumber of tasks in queue: %i", rq[0]);
+		for(i=0; i < rq[0]; i++) {
+		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
+		}
+*/
+	/*End Testing Code */
 
 	switch (resetCode)
 	{
@@ -168,6 +238,7 @@ int main(int argc, char* argv[])
 
 	// exit os
 	longjmp(reset_context, POWER_DOWN_QUIT);
+
 	return 0;
 } // end main
 
@@ -180,6 +251,7 @@ int main(int argc, char* argv[])
 static int scheduler()
 {
 	int nextTask;
+
 	// ?? Design and implement a scheduler that will select the next highest
 	// ?? priority ready task to pass to the system dispatcher.
 
@@ -194,6 +266,17 @@ static int scheduler()
 	// ?? you thinking about scheduling.  You must implement code to handle
 	// ?? priorities, clean up dead tasks, and handle semaphores appropriately.
 
+	nextTask = deque(rq, -1);
+	//printf("Starting task %i", nextTask);
+
+	if (nextTask >= 0)
+	{
+		enque(rq, nextTask, tcb[nextTask].priority);
+	}
+
+	return nextTask;
+
+	/*
 	// schedule next task
 	nextTask = ++curTask;
 
@@ -205,8 +288,42 @@ static int scheduler()
 	if (tcb[nextTask].signal & mySIGSTOP) return -1;
 
 	return nextTask;
+	 */
 } // end scheduler
 
+int enque(PriorityQueue queue, TID tid, Priority p) {
+	int i;
+
+	for (i=queue[0]; i>0; i--) {
+		if (tcb[queue[i]].priority >= p) queue[i+1] = queue[i];
+		else break;
+	}
+
+	queue[i+1] = tid;
+	queue[0]++;
+
+	return tid;
+}
+
+int deque(PriorityQueue queue, TID tid) {
+	int i;
+	bool found = FALSE;
+
+	// return the highest priority task, if there's at least one
+	if(tid == -1 && queue[0] > 0) {
+		return queue[queue[0]--];
+	}
+
+	// the caller must have asked for a specific task
+	for (i=1; i<=queue[0]; i++) {
+		if (queue[i] == tid) found = TRUE;
+		else if (found) queue[i-1] = queue[i];
+	}
+
+	queue[0]--;
+	return (found) ? tid : -1;
+
+}
 
 
 // **********************************************************************
@@ -408,4 +525,3 @@ void powerDown(int code)
 	RESTORE_OS
 	return;
 } // end powerDown
-

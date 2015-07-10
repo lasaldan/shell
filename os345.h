@@ -67,6 +67,8 @@ enum {PAGE_INIT, PAGE_READ, PAGE_OLD_WRITE, PAGE_NEW_WRITE,
 // system structs
 typedef int bool;						// boolean value
 typedef int TID;						// task id
+typedef int Priority;
+typedef int* PriorityQueue;
 
 // semaphore
 typedef struct semaphore			// semaphore
@@ -130,6 +132,11 @@ bool deleteSemaphore(Semaphore** semaphore);
 void semSignal(Semaphore*);
 int semWait(Semaphore*);
 int semTryLock(Semaphore*);
+
+PriorityQueue bq;
+PriorityQueue rq;
+int enque(PriorityQueue, TID, Priority);
+int deque(PriorityQueue, TID);
 
 
 // ***********************************************************************
