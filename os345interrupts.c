@@ -23,6 +23,7 @@
 #include <setjmp.h>
 #include <time.h>
 #include <assert.h>
+#include <time.h>
 
 #include "os345.h"
 #include "os345config.h"
@@ -44,6 +45,7 @@ extern Semaphore* charReady;				// character has been entered
 extern Semaphore* inBufferReady;			// input buffer ready semaphore
 
 extern Semaphore* tics1sec;				// 1 second semaphore
+extern Semaphore* tics10sec;
 extern Semaphore* tics10thsec;				// 1/10 second semaphore
 
 extern char inChar;				// last entered character
@@ -62,6 +64,9 @@ extern int superMode;						// system mode
 
 extern TCB tcb[];
 
+time_t timer;
+int lastTime = 0;
+
 // **********************************************************************
 // **********************************************************************
 // simulate asynchronous interrupts by polling events during idle loop
@@ -72,6 +77,12 @@ void pollInterrupts(void)
 	pollClock = clock();
 	assert("Timeout" && ((pollClock - lastPollClock) < MAX_CYCLES));
 	lastPollClock = pollClock;
+
+	time(&timer);
+	if(timer >= lastTime + 10) {
+		lastTime = timer;
+		semSignal(tics10sec);
+	}
 
 	// check for keyboard interrupt
 	if ((inChar = GET_CHAR) > 0)

@@ -54,6 +54,7 @@ Semaphore* charReady;				// character has been entered
 Semaphore* inBufferReady;			// input buffer ready semaphore
 
 Semaphore* tics1sec;				// 1 second semaphore
+Semaphore* tics10sec;
 Semaphore* tics10thsec;				// 1/10 second semaphore
 
 // **********************************************************************
@@ -97,6 +98,10 @@ clock_t myOldClkTime;
 //
 int main(int argc, char* argv[])
 {
+
+	// Disable buffering for debugging
+	setbuf(stdout, NULL);
+
 	// save context for restart (a system reset would return here...)
 	int resetCode = setjmp(reset_context);
 	superMode = TRUE;						// supervisor mode
@@ -206,6 +211,7 @@ int main(int argc, char* argv[])
 	keyboard = createSemaphore("keyboard", BINARY, 1);
 	tics1sec = createSemaphore("tics1sec", BINARY, 0);
 	tics10thsec = createSemaphore("tics10thsec", BINARY, 0);
+	tics10sec = createSemaphore("tics10sec", COUNTING, 10);
 
 	//?? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -293,7 +299,6 @@ static int scheduler()
 
 int enque(PriorityQueue queue, TID tid, Priority p) {
 	int i;
-
 	for (i=queue[0]; i>0; i--) {
 		if (tcb[queue[i]].priority >= p) queue[i+1] = queue[i];
 		else break;
@@ -320,7 +325,9 @@ int deque(PriorityQueue queue, TID tid) {
 		else if (found) queue[i-1] = queue[i];
 	}
 
-	queue[0]--;
+	if(found)
+		queue[0]--;
+
 	return (found) ? tid : -1;
 
 }

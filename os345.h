@@ -78,6 +78,7 @@ typedef struct semaphore			// semaphore
 	int state;							// semaphore state
 	int type;							// semaphore type
 	int taskNum;						// semaphore creator task #
+	PriorityQueue waitingQueue;
 } Semaphore;
 
 // task control block

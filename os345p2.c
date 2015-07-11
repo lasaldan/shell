@@ -37,11 +37,15 @@ extern int curTask;							// current task #
 extern Semaphore* semaphoreList;			// linked list of active semaphores
 extern jmp_buf reset_context;				// context of kernel stack
 
+extern Semaphore* tics10sec;
+
+
 // ***********************************************************************
 // project 2 functions and tasks
 
 int signalTask(int, char**);
 int ImAliveTask(int, char**);
+int p2Task(int, char**);
 
 // ***********************************************************************
 // ***********************************************************************
@@ -51,9 +55,28 @@ int P2_project2(int argc, char* argv[])
 	static char* s1Argv[] = {"signal1", "s1Sem"};
 	static char* s2Argv[] = {"signal2", "s2Sem"};
 	static char* aliveArgv[] = {"I'm Alive", "3"};
+	static char* task1Argv[] = {"p2Task-1","1"};
+	static char* task2Argv[] = {"p2Task-2","2"};
+	static char* task3Argv[] = {"p2Task-3","3"};
+	static char* task4Argv[] = {"p2Task-4","4"};
+	static char* task5Argv[] = {"p2Task-5","5"};
+	static char* task6Argv[] = {"p2Task-6","6"};
+	static char* task7Argv[] = {"p2Task-7","7"};
+	static char* task8Argv[] = {"p2Task-8","8"};
+	static char* task9Argv[] = {"p2Task-9","9"};
 
 	printf("\nStarting Project 2");
 	SWAP;
+
+	createTask("p2Task-1", p2Task, HIGH_PRIORITY, 2, task1Argv);
+	createTask("p2Task-2", p2Task, HIGH_PRIORITY, 2, task2Argv);
+	createTask("p2Task-3", p2Task, HIGH_PRIORITY, 2, task3Argv);
+	createTask("p2Task-4", p2Task, HIGH_PRIORITY, 2, task4Argv);
+	createTask("p2Task-5", p2Task, HIGH_PRIORITY, 2, task5Argv);
+	createTask("p2Task-6", p2Task, HIGH_PRIORITY, 2, task6Argv);
+	createTask("p2Task-7", p2Task, HIGH_PRIORITY, 2, task7Argv);
+	createTask("p2Task-8", p2Task, HIGH_PRIORITY, 2, task8Argv);
+	createTask("p2Task-9", p2Task, HIGH_PRIORITY, 2, task9Argv);
 
 	// start tasks looking for sTask semaphores
 	createTask("signal1",				// task name
@@ -258,6 +281,17 @@ int ImAliveTask(int argc, char* argv[])
 	return 0;						// terminate task
 } // end ImAliveTask
 
+
+int p2Task(int argc, char* argv[])
+{
+	time_t curTime;
+
+	while(1) {
+		semWait(tics10sec);
+		time(&curTime);
+		printf("\nHello from [%s]    Activated at: %s", argv[0], ctime(&curTime));
+	}
+}
 
 
 // **********************************************************************
