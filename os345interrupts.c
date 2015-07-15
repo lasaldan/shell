@@ -54,6 +54,7 @@ extern int inBufIndx;				// input pointer into input buffer
 extern char inBuffer[INBUF_SIZE+1];	// character input buffer
 
 extern time_t oldTime1;					// old 1sec time
+extern time_t oldTime10;
 extern clock_t myClkTime;
 extern clock_t myOldClkTime;
 
@@ -77,13 +78,13 @@ void pollInterrupts(void)
 	pollClock = clock();
 	assert("Timeout" && ((pollClock - lastPollClock) < MAX_CYCLES));
 	lastPollClock = pollClock;
-
+	/*
 	time(&timer);
 	if(timer >= lastTime + 10) {
 		lastTime = timer;
 		semSignal(tics10sec);
 	}
-
+	*/
 	// check for keyboard interrupt
 	if ((inChar = GET_CHAR) > 0)
 	{
@@ -197,15 +198,15 @@ static void timer_isr()
 	assert("timer_isr Error" && superMode);
 
 	// capture current time
-  	time(&currentTime);
+	time(&currentTime);
 
-  	// one second timer
-  	if ((currentTime - oldTime1) >= 1)
-  	{
+	// one second timer
+	if ((currentTime - oldTime1) >= 1)
+	{
 		// signal 1 second
-  	   semSignal(tics1sec);
+	  semSignal(tics1sec);
 		oldTime1 += 1;
-  	}
+	}
 
 	// sample fine clock
 	myClkTime = clock();
@@ -216,6 +217,11 @@ static void timer_isr()
 	}
 
 	// ?? add other timer sampling/signaling code here for project 2
+	if(( currentTime - oldTime10) >= 10)
+	{
+		semSignal(tics10sec);
+		oldTime10 += 10;
+	}
 
 	return;
 } // end timer_isr

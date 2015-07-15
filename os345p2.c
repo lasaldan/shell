@@ -138,6 +138,17 @@ int P2_listTasks(int argc, char* argv[])
 } // end P2_listTasks
 
 
+// **************************************************************************
+// **************************************************************************
+// ready Queue command
+//
+int P2_readyQueue(int argc, char **argv)
+{
+	printf("\nReadyQ");
+	return 0;
+} // end P1_add
+
+
 
 // ***********************************************************************
 // ***********************************************************************
@@ -276,7 +287,7 @@ int ImAliveTask(int argc, char* argv[])
 	while (1)
 	{
 		printf("\n(%d) I'm Still Alive!", curTask);
-		for (i=0; i<100000; i++) swapTask();
+		for (i=0; i<500000; i++) swapTask();
 	}
 	return 0;						// terminate task
 } // end ImAliveTask
@@ -289,7 +300,7 @@ int p2Task(int argc, char* argv[])
 	while(1) {
 		semWait(tics10sec);
 		time(&curTime);
-		printf("\nHello from [%s]    Activated at: %s", argv[0], ctime(&curTime));
+		printf("\nTask[%s] Activated at: %s", argv[0], ctime(&curTime));
 	}
 }
 

@@ -141,12 +141,38 @@ int killTask(int taskId)
 static void exitTask(int taskId)
 {
 	assert("exitTaskError" && tcb[taskId].name);
+	int i;
 
 	// 1. find task in system queue
 	// 2. if blocked, unblock (handle semaphore)
 	// 3. set state to exit
 
 	// ?? add code here
+	// Clear out of Ready Queue
+	for(i=0; i<rq[0]; i++)
+	{
+		if(rq[i] == taskId)
+		{
+			deque(rq, taskId);
+			if(tcb[taskId].event != 0)
+				SEM_SIGNAL(tcb[taskId].event);
+			tcb[taskId].state = S_READY;	// unblock task
+			break;
+		}
+	}
+
+	// Clear out of Blocked Queue
+	for(i=0; i<bq[0]; i++)
+	{
+		if(bq[i] == taskId)
+		{
+			deque(bq, taskId);
+			if(tcb[taskId].event != 0)
+				SEM_SIGNAL(tcb[taskId].event);
+			tcb[taskId].state = S_READY;	// unblock task
+			break;
+		}
+	}
 
 	tcb[taskId].state = S_EXIT;			// EXIT task state
 	return;

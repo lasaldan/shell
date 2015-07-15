@@ -174,6 +174,7 @@ int P2_listTasks(int, char**);
 int P2_reset(int, char**);
 int P2_signal1(int, char**);
 int P2_signal2(int, char**);
+int P2_readyQueue(int, char**);
 
 int P3_project3(int, char**);
 int P3_dc(int, char**);

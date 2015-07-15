@@ -82,6 +82,7 @@ int lastPollClock;					// last pollClock
 bool diskMounted;					// disk has been mounted
 
 time_t oldTime1;					// old 1sec time
+time_t oldTime10;
 clock_t myClkTime;
 clock_t myOldClkTime;
 
@@ -105,77 +106,6 @@ int main(int argc, char* argv[])
 	// save context for restart (a system reset would return here...)
 	int resetCode = setjmp(reset_context);
 	superMode = TRUE;						// supervisor mode
-
-	rq = (int*)malloc(MAX_TASKS * sizeof(int));
-	rq[0] = 0;
-
-	bq = (int*)malloc(MAX_TASKS * sizeof(int));
-	bq[0] = 0;
-
-	/* Testing Code */
-/*
-	int i;
-
-	TID zero = 0;
-	TID one = 1;
-	TID two = 2;
-	TID three = 3;
-	TID four = 4;
-
-	tcb[0].name = "zero added (10)";
-	tcb[0].priority = 10;
-
-	tcb[1].name = "first added (9)";
-	tcb[1].priority = 9;
-
-	tcb[2].name = "second added (10)";
-	tcb[2].priority = 10;
-
-	tcb[3].name = "third added (6)";
-	tcb[3].priority = 6;
-
-	tcb[4].name = "fourth added (8)";
-	tcb[4].priority = 8;
-
-	enque(rq, zero, 10);
-	printf("\n\nNumber of tasks in queue: %i", rq[0]);
-	for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-	}
-
-	enque(rq, one, 9);
-	printf("\n\nNumber of tasks in queue: %i", rq[0]);
-	for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-	}
-
-	enque(rq, two, 10);
-	printf("\n\nNumber of tasks in queue: %i", rq[0]);
-	for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-	}
-
-	enque(rq, three, 6);
-	printf("\n\nNumber of tasks in queue: %i", rq[0]);
-	for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-	}
-
-	enque(rq, four, 8);
-	printf("\n\nNumber of tasks in queue: %i", rq[0]);
-	for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-	}
-
-	i = deque(rq, -1);
-	printf("\n\nDequeued!!!! Removed task %i %s", i, tcb[i].name);
-
-		printf("\n\nNumber of tasks in queue: %i", rq[0]);
-		for(i=0; i < rq[0]; i++) {
-		printf("\n%i: %s", i+1, tcb[rq[i+1]].name);
-		}
-*/
-	/*End Testing Code */
 
 	switch (resetCode)
 	{
@@ -211,7 +141,7 @@ int main(int argc, char* argv[])
 	keyboard = createSemaphore("keyboard", BINARY, 1);
 	tics1sec = createSemaphore("tics1sec", BINARY, 0);
 	tics10thsec = createSemaphore("tics10thsec", BINARY, 0);
-	tics10sec = createSemaphore("tics10sec", COUNTING, 10);
+	tics10sec = createSemaphore("tics10sec", COUNTING, 0);
 
 	//?? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -258,45 +188,25 @@ static int scheduler()
 {
 	int nextTask;
 
-	// ?? Design and implement a scheduler that will select the next highest
-	// ?? priority ready task to pass to the system dispatcher.
-
-	// ?? WARNING: You must NEVER call swapTask() from within this function
-	// ?? or any function that it calls.  This is because swapping is
-	// ?? handled entirely in the swapTask function, which, in turn, may
-	// ?? call this function.  (ie. You would create an infinite loop.)
-
-	// ?? Implement a round-robin, preemptive, prioritized scheduler.
-
-	// ?? This code is simply a round-robin scheduler and is just to get
-	// ?? you thinking about scheduling.  You must implement code to handle
-	// ?? priorities, clean up dead tasks, and handle semaphores appropriately.
-
 	nextTask = deque(rq, -1);
-	//printf("Starting task %i", nextTask);
 
 	if (nextTask >= 0)
 	{
 		enque(rq, nextTask, tcb[nextTask].priority);
 	}
 
-	return nextTask;
-
-	/*
-	// schedule next task
-	nextTask = ++curTask;
-
-	// mask sure nextTask is valid
-	while (!tcb[nextTask].name)
-	{
-		if (++nextTask >= MAX_TASKS) nextTask = 0;
-	}
 	if (tcb[nextTask].signal & mySIGSTOP) return -1;
 
 	return nextTask;
-	 */
+
 } // end scheduler
 
+
+
+// **********************************************************************
+// **********************************************************************
+// enque
+//
 int enque(PriorityQueue queue, TID tid, Priority p) {
 	int i;
 	for (i=queue[0]; i>0; i--) {
@@ -310,6 +220,11 @@ int enque(PriorityQueue queue, TID tid, Priority p) {
 	return tid;
 }
 
+
+// **********************************************************************
+// **********************************************************************
+// deque
+//
 int deque(PriorityQueue queue, TID tid) {
 	int i;
 	bool found = FALSE;
@@ -347,7 +262,7 @@ static int dispatcher()
 		case S_NEW:
 		{
 			// new task
-			printf("\nNew Task[%d] %s", curTask, tcb[curTask].name);
+			//printf("\nNew Task[%d] %s", curTask, tcb[curTask].name);
 			tcb[curTask].state = S_RUNNING;	// set task to run state
 
 			// save kernel context for task SWAP's
@@ -480,6 +395,7 @@ static int initOS()
 	// capture current time
 	lastPollClock = clock();			// last pollClock
 	time(&oldTime1);
+	time(&oldTime10);
 
 	// init system tcb's
 	for (i=0; i<MAX_TASKS; i++)
@@ -498,6 +414,10 @@ static int initOS()
 	initLC3Memory(LC3_MEM_FRAME, 0xF800>>6);
 
 	// ?? initialize all execution queues
+	rq[0] = 0;
+
+	bq = (int*)malloc(MAX_TASKS * sizeof(int));
+	bq[0] = 0;
 
 	return 0;
 } // end initOS

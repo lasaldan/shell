@@ -34,7 +34,7 @@ extern TCB tcb;
 // -----
 
 
-#define NUM_COMMANDS 51
+#define NUM_COMMANDS 52
 typedef struct								// command struct
 {
 	char* command;
@@ -403,6 +403,7 @@ Command** P1_init()
 	commands[i++] = newCommand("tasks", "lt", P2_listTasks, "List tasks");
 	commands[i++] = newCommand("signal1", "s1", P2_signal1, "Signal sem1 semaphore");
 	commands[i++] = newCommand("signal2", "s2", P2_signal2, "Signal sem2 semaphore");
+	commands[i++] = newCommand("readyQueue", "rq", P2_readyQueue, "List Ready Queue Tasks");
 
 	// P3: Jurassic Park
 	commands[i++] = newCommand("project3", "p3", P3_project3, "P3: Jurassic Park");
