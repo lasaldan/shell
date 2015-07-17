@@ -34,6 +34,7 @@
 #define NUM_MESSAGES		500
 #define INBUF_SIZE			256
 #define ONE_TENTH_SEC		(CLOCKS_PER_SEC/10)
+#define MAX_DC_SIZE			256
 
 // Default priorities
 #define LOW_PRIORITY		1
@@ -104,6 +105,14 @@ typedef struct							// task control block
 	jmp_buf context;					// task context pointer
 } TCB;
 
+typedef struct DcEntry
+{
+	int time;
+	Semaphore *sem;
+} DcEntry;
+
+typedef DcEntry* DeltaClock;
+
 // Task specific variables
 #define CDIR		tcb[curTask].cdir
 #define TASK_RPT	tcb[curTask].RPT
@@ -136,8 +145,14 @@ int semTryLock(Semaphore*);
 
 PriorityQueue bq;
 PriorityQueue rq;
+
+DeltaClock dc;
+int deltaClockSize;
+
 int enque(PriorityQueue, TID, Priority);
 int deque(PriorityQueue, TID);
+int insertDeltaClock(int time, Semaphore* sem);
+int tickDeltaClock();
 
 
 // ***********************************************************************
@@ -178,6 +193,7 @@ int P2_readyQueue(int, char**);
 
 int P3_project3(int, char**);
 int P3_dc(int, char**);
+int P3_dc_ticker(int, char**);
 
 int P4_project4(int, char**);
 int P4_dumpFrame(int, char**);

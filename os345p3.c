@@ -35,6 +35,8 @@ extern Semaphore* fillSeat[NUM_CARS];			// (signal) seat ready to fill
 extern Semaphore* seatFilled[NUM_CARS];		// (wait) passenger seated
 extern Semaphore* rideOver[NUM_CARS];			// (signal) ride over
 
+extern Semaphore* tics10thsec;
+
 
 // ***********************************************************************
 // project 3 functions and tasks
@@ -63,6 +65,9 @@ int P3_project3(int argc, char* argv[])
 	while (!parkMutex) SWAP;
 	printf("\nStart Jurassic Park...");
 
+	static char* tickerArgv[] = {"ticker"};
+	createTask("Ticker10thSec", P3_dc_ticker, MED_PRIORITY, 1, tickerArgv);
+
 	//?? create car, driver, and visitor tasks here
 
 	return 0;
@@ -81,6 +86,13 @@ int P3_dc(int argc, char* argv[])
 	return 0;
 } // end CL3_dc
 
+
+int P3_dc_ticker(int argc, char** argv) {
+	while(1) {
+		semWait(tics10thsec);
+		tickDeltaClock();
+	}
+}
 
 /*
 // ***********************************************************************

@@ -68,7 +68,7 @@
 #define SET_STACK(s)	__asm("movq _temp(%rip),%rsp");
 #define RESTORE_OS	system("stty icanon echo");	// enable canonical mode and echo
 #define LITTLE	1
-#define CLEAR_SCREEN	system("cls");
+#define CLEAR_SCREEN	system("clear");
 #endif
 
 #define SWAP_BYTES(v) 1?v:((((v)>>8)&0x00ff))|((v)<<8)

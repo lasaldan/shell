@@ -37,8 +37,8 @@ void pollInterrupts(void);
 static int scheduler(void);
 static int dispatcher(void);
 
-//static void keyboard_isr(void);
-//static void timer_isr(void);
+static void keyboard_isr(void);
+static void timer_isr(void);
 
 int sysKillTask(int taskId);
 static int initOS(void);
@@ -101,7 +101,24 @@ int main(int argc, char* argv[])
 {
 
 	// Disable buffering for debugging
-	setbuf(stdout, NULL);
+	// setbuf(stdout, NULL);
+/*
+	insertDeltaClock(4, tics10thsec);
+	insertDeltaClock(8, tics10thsec);
+	insertDeltaClock(1, tics10thsec);
+	insertDeltaClock(12, tics10thsec);
+	insertDeltaClock(6, tics10thsec);
+	insertDeltaClock(1, tics10thsec);
+	insertDeltaClock(2, tics10thsec);
+	insertDeltaClock(9, tics10thsec);
+
+
+	dc;
+	int i = 0;
+	for(i=0; i<deltaClockSize; i++) {
+		printf("\n%i: %i seconds - %s", i, dc[i].time, dc[i].sem->name);
+	}
+*/
 
 	// save context for restart (a system reset would return here...)
 	int resetCode = setjmp(reset_context);
@@ -201,6 +218,72 @@ static int scheduler()
 
 } // end scheduler
 
+
+
+
+// **********************************************************************
+// **********************************************************************
+// delta clock
+//
+int insertDeltaClock(int time, Semaphore* sem) {
+	int insertPosition = 0;
+	int timeRemaining = time;
+	int ticsFromPrevious = 0;
+	int ticsToNext = 0;
+	int temp, i;
+
+	// create new entry for delta clock with parameters
+	struct DcEntry newEntry;
+	newEntry.sem = sem;
+
+	if(deltaClockSize == 0) {
+		newEntry.time = time;
+		dc[0] = newEntry;
+	}
+
+	else {
+		for (insertPosition = 0; insertPosition < deltaClockSize; insertPosition++) {
+			ticsFromPrevious = timeRemaining;
+			timeRemaining = timeRemaining - dc[insertPosition].time;
+			if (timeRemaining < 0) {
+				ticsToNext = -1 * timeRemaining;
+				break;
+			}
+			ticsFromPrevious = timeRemaining;
+		}
+
+		for (i = deltaClockSize-1; i >= insertPosition; i--) {
+			dc[i+1] = dc[i];
+		}
+
+		// adjust times of new entry, and next entry
+		newEntry.time = ticsFromPrevious;
+		if(insertPosition != deltaClockSize)
+			dc[insertPosition+1].time = ticsToNext;
+
+		dc[insertPosition] = newEntry;
+	}
+
+	deltaClockSize ++;
+
+	return 0;
+}
+
+int tickDeltaClock() {
+	int i;
+	// Is it time to signal any semaphores?
+	if(deltaClockSize > 0 && --(dc[0].time) == 0) {
+		// For every entry that just expired, signal semaphore
+		while(dc[0].time == 0 && deltaClockSize > 0) {
+			SEM_SIGNAL(dc[0].sem);
+			// shift everything down
+			for(i=0; i<deltaClockSize-1; i++) {
+				dc[i] = dc[i+1];
+			}
+			deltaClockSize--;
+		}
+	}
+}
 
 
 // **********************************************************************
@@ -415,6 +498,9 @@ static int initOS()
 
 	// ?? initialize all execution queues
 	rq[0] = 0;
+
+	dc = (DcEntry*)malloc(MAX_DC_SIZE * sizeof(DcEntry));
+	deltaClockSize = 0;
 
 	bq = (int*)malloc(MAX_TASKS * sizeof(int));
 	bq[0] = 0;
