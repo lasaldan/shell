@@ -58,7 +58,8 @@ void semSignal(Semaphore* s)
 
 			s->state = 0;								// clear semaphore
 			tcb[temp].event = 0;				// clear event pointer
-			tcb[temp].state = S_READY;	// unblock task
+			if(tcb[temp].state == S_BLOCKED)
+				tcb[temp].state = S_READY;	// unblock task
 
 			enque(rq, temp, tcb[temp].priority);
 
@@ -80,7 +81,8 @@ void semSignal(Semaphore* s)
 
 			s->state++;
 			tcb[temp].event = 0;			// clear event pointer
-			tcb[temp].state = S_READY;	// unblock task
+			if(tcb[temp].state == S_BLOCKED)
+				tcb[temp].state = S_READY;	// unblock task
 
 			enque(rq, temp, tcb[temp].priority);
 
@@ -172,21 +174,23 @@ int semTryLock(Semaphore* s)
 
 		if (s->state == 0)
 		{
-			enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
+			//enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
 			return 0;
 		}
 		// state is non-zero (semaphore already signaled)
 		s->state = 0;						// reset state, and don't block
+		swapTask();
 		return 1;
 	}
 	else
 	{
 		if (s->state == 0)
 		{
-			enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
+			//enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
 			return 0;
 		}
 		s->state--;
+		swapTask();
 		return 1;
 
 	}

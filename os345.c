@@ -43,6 +43,8 @@ static void timer_isr(void);
 int sysKillTask(int taskId);
 static int initOS(void);
 
+int delta_clock_task(int, char**);
+
 // **********************************************************************
 // **********************************************************************
 // global semaphores
@@ -56,6 +58,8 @@ Semaphore* inBufferReady;			// input buffer ready semaphore
 Semaphore* tics1sec;				// 1 second semaphore
 Semaphore* tics10sec;
 Semaphore* tics10thsec;				// 1/10 second semaphore
+
+Semaphore* deltaClock;
 
 // **********************************************************************
 // **********************************************************************
@@ -159,6 +163,7 @@ int main(int argc, char* argv[])
 	tics1sec = createSemaphore("tics1sec", BINARY, 0);
 	tics10thsec = createSemaphore("tics10thsec", BINARY, 0);
 	tics10sec = createSemaphore("tics10sec", COUNTING, 0);
+	deltaClock = createSemaphore("deltaClock", BINARY, 0);
 
 	//?? ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -169,6 +174,12 @@ int main(int argc, char* argv[])
 					argc,			// task arg count
 					argv);			// task argument pointers
 
+	static char* dcArgv[] = {"deltaClock"};
+	createTask("deltaClock",
+					delta_clock_task,
+					HIGH_PRIORITY,
+					1,
+					dcArgv);
 	// HERE WE GO................
 
 	// Scheduling loop
@@ -269,12 +280,20 @@ int insertDeltaClock(int time, Semaphore* sem) {
 	return 0;
 }
 
+int delta_clock_task(int argc, char* argv[]) {
+	while(1) {
+		printf("a");
+	}
+}
+
 int tickDeltaClock() {
 	int i;
+	printf("[%i]",deltaClockSize);
 	// Is it time to signal any semaphores?
-	if(deltaClockSize > 0 && --(dc[0].time) == 0) {
+	if(deltaClockSize && deltaClockTicker-- < 0 && --(dc[0].time) == 0) {
 		// For every entry that just expired, signal semaphore
-		while(dc[0].time == 0 && deltaClockSize > 0) {
+		while(deltaClockSize > 0 && dc[0].time == 0) {
+			printf("Signaling %s\n", dc[0].sem->name);
 			SEM_SIGNAL(dc[0].sem);
 			// shift everything down
 			for(i=0; i<deltaClockSize-1; i++) {
@@ -282,6 +301,8 @@ int tickDeltaClock() {
 			}
 			deltaClockSize--;
 		}
+
+		deltaClockTicker = 10;
 	}
 }
 
@@ -501,6 +522,7 @@ static int initOS()
 
 	dc = (DcEntry*)malloc(MAX_DC_SIZE * sizeof(DcEntry));
 	deltaClockSize = 0;
+	deltaClockTicker = 0;
 
 	bq = (int*)malloc(MAX_TASKS * sizeof(int));
 	bq[0] = 0;

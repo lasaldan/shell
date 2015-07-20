@@ -159,7 +159,7 @@ static void keyboard_isr()
 				for (t=0; t<MAX_TASKS; t++)
 				{
 					tcb[t].signal &= ~mySIGSTOP;
-					tcb[t].signal &= ~mySIGTSTP;
+					//tcb[t].signal &= ~mySIGTSTP;
 				}
 				break;
 			}
@@ -214,6 +214,7 @@ static void timer_isr()
 	{
 		myOldClkTime = myOldClkTime + ONE_TENTH_SEC;   // update old
 		semSignal(tics10thsec);
+		tickDeltaClock();
 	}
 
 	// ?? add other timer sampling/signaling code here for project 2

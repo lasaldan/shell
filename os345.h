@@ -19,6 +19,8 @@
 #define SEM_WAIT(s)			semWait(s);
 #define SEM_SIGNAL(s)		semSignal(s);
 #define SEM_TRYLOCK(s)		semTryLock(s);
+#define iSEM_TRYLOCK(s)	semTryLock(s)
+#define iSEM_WAIT(s) semWait(s)
 
 // ***********************************************************************
 // Miscellaneous directives
@@ -148,6 +150,7 @@ PriorityQueue rq;
 
 DeltaClock dc;
 int deltaClockSize;
+int deltaClockTicker;
 
 int enque(PriorityQueue, TID, Priority);
 int deque(PriorityQueue, TID);

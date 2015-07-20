@@ -112,28 +112,37 @@ int P2_project2(int argc, char* argv[])
 // list tasks command
 int P2_listTasks(int argc, char* argv[])
 {
-	int i;
+	int i, j, p;
 
 //	?? 1) List all tasks in all queues
-// ?? 2) Show the task stake (new, running, blocked, ready)
+// ?? 2) Show the task state (new, running, blocked, ready)
 // ?? 3) If blocked, indicate which semaphore
 
-	for (i=0; i<MAX_TASKS; i++)
-	{
-		if (tcb[i].name)
+	for (j=0; j<5; j++) {
+		if( j == 0 ) p = 99;
+		if( j == 1 ) p = 20;
+		if( j == 2 ) p = 10;
+		if( j == 3 ) p = 5;
+		if( j == 4 ) p = 1;
+
+		for (i=0; i<MAX_TASKS; i++)
 		{
-			printf("\n%4d/%-4d%20s%4d  ", i, tcb[i].parent,
-		  				tcb[i].name, tcb[i].priority);
-			if (tcb[i].signal & mySIGSTOP) my_printf("Paused");
-			else if (tcb[i].state == S_NEW) my_printf("New");
-			else if (tcb[i].state == S_READY) my_printf("Ready");
-			else if (tcb[i].state == S_RUNNING) my_printf("Running");
-			else if (tcb[i].state == S_BLOCKED) my_printf("Blocked    %s",
-		  				tcb[i].event->name);
-			else if (tcb[i].state == S_EXIT) my_printf("Exiting");
-			swapTask();
+			if (tcb[i].name && tcb[i].priority == p)
+			{
+				printf("\n%4d/%-4d%20s%4d  ", i, tcb[i].parent,
+			  				tcb[i].name, tcb[i].priority);
+				if (tcb[i].signal & mySIGSTOP) my_printf("Paused");
+				else if (tcb[i].state == S_NEW) my_printf("New");
+				else if (tcb[i].state == S_READY) my_printf("Ready");
+				else if (tcb[i].state == S_RUNNING) my_printf("Running");
+				else if (tcb[i].state == S_BLOCKED) my_printf("Blocked    %s",
+			  				tcb[i].event->name);
+				else if (tcb[i].state == S_EXIT) my_printf("Exiting");
+				swapTask();
+			}
 		}
 	}
+
 	return 0;
 } // end P2_listTasks
 

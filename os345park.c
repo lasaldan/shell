@@ -609,7 +609,7 @@ void drawPark(JPARK *park)
 	// draw park
 	CLEAR_SCREEN;																		SWAP;
 	printf("\n");																		SWAP;
-	for (i=0; i<25; i++) printf("\n%s", &pk[i][0]);							SWAP;
+	for (i=0; i<25; i++) printf("%s\n", &pk[i][0]);							SWAP;
 	printf("\n");																		SWAP;
 
 	// driver in only one place at a time
@@ -672,4 +672,3 @@ int lostVisitorTask(int argc, char* argv[])
 	}
 	return 0;
 } // end lostVisitorTask
-
