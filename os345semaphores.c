@@ -124,7 +124,7 @@ int semWait(Semaphore* s)
 
 			enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
 
-			swapTask();						// reschedule the tasks
+			if (!superMode) swapTask();						// reschedule the tasks
 			return 1;
 		}
 		// state is non-zero (semaphore already signaled)
@@ -141,7 +141,7 @@ int semWait(Semaphore* s)
 
 			enque(s->waitingQueue, deque(rq, curTask), tcb[curTask].priority);
 
-			swapTask();
+			if (!superMode) swapTask();
 			s->state--;
 			return 1;
 		}
@@ -179,7 +179,7 @@ int semTryLock(Semaphore* s)
 		}
 		// state is non-zero (semaphore already signaled)
 		s->state = 0;						// reset state, and don't block
-		swapTask();
+		if (!superMode) swapTask();
 		return 1;
 	}
 	else
@@ -190,7 +190,7 @@ int semTryLock(Semaphore* s)
 			return 0;
 		}
 		s->state--;
-		swapTask();
+		if (!superMode) swapTask();
 		return 1;
 
 	}

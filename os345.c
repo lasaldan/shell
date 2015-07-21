@@ -174,12 +174,14 @@ int main(int argc, char* argv[])
 					argc,			// task arg count
 					argv);			// task argument pointers
 
+	/*
 	static char* dcArgv[] = {"deltaClock"};
 	createTask("deltaClock",
 					delta_clock_task,
 					HIGH_PRIORITY,
 					1,
 					dcArgv);
+	*/
 	// HERE WE GO................
 
 	// Scheduling loop
@@ -288,11 +290,10 @@ int delta_clock_task(int argc, char* argv[]) {
 
 int tickDeltaClock() {
 	int i;
-	printf("[%i]",deltaClockSize);
 	// Is it time to signal any semaphores?
-	if(deltaClockSize && deltaClockTicker-- < 0 && --(dc[0].time) == 0) {
+	if(deltaClockSize && deltaClockTicker-- < 0 && --(dc[0].time) <= 0) {
 		// For every entry that just expired, signal semaphore
-		while(deltaClockSize > 0 && dc[0].time == 0) {
+		while(deltaClockSize > 0 && dc[0].time <= 0) {
 			printf("Signaling %s\n", dc[0].sem->name);
 			SEM_SIGNAL(dc[0].sem);
 			// shift everything down
