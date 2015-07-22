@@ -294,7 +294,7 @@ int tickDeltaClock() {
 	if(deltaClockSize && deltaClockTicker-- < 0 && --(dc[0].time) <= 0) {
 		// For every entry that just expired, signal semaphore
 		while(deltaClockSize > 0 && dc[0].time <= 0) {
-			printf("Signaling %s\n", dc[0].sem->name);
+			//printf("Signaling %s\n", dc[0].sem->name);
 			SEM_SIGNAL(dc[0].sem);
 			// shift everything down
 			for(i=0; i<deltaClockSize-1; i++) {

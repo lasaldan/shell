@@ -55,7 +55,8 @@ int jurassic_car(int argc, char* argv[]);
 int jurassic_visitor(int argc, char* argv[]);
 int jurassic_driver(int argc, char* argv[]);
 
-int readyCar;
+int loadingCar;
+Semaphore* loadingPassenger;
 
 
 // ***********************************************************************
@@ -98,9 +99,9 @@ int P3_project3(int argc, char* argv[])
 
 	museum = createSemaphore("museum", COUNTING, MAX_IN_MUSEUM);
 
-	readyCar = 0;
+	loadingCar = 0;
 
-	/*
+
 	static char* car1Argv[] = {"carA","0"};
 	createTask("CarA", jurassic_car, MED_PRIORITY, 2, car1Argv);
 
@@ -112,12 +113,15 @@ int P3_project3(int argc, char* argv[])
 
 	static char* car4Argv[] = {"carD","3"};
 	createTask("CarD", jurassic_car, MED_PRIORITY, 2, car4Argv);
-	*/
+
 	for(i = 0; i < 12; i++) {
 		char* newArgv[2];
 		sprintf(buf, "visitor%i", i);
 		newArgv[0] = buf;
-		createTask(buf, jurassic_visitor, MED_PRIORITY, 1, newArgv);
+		char id[3];
+		sprintf(id, "%i", i);
+		newArgv[1] = id;
+		createTask(buf, jurassic_visitor, MED_PRIORITY, 2, newArgv);
 	}
 
 	static char* dr0Argv[] = {"driver0", "0"};
@@ -136,6 +140,7 @@ int P3_project3(int argc, char* argv[])
 } // end project3
 
 int jurassic_visitor(int argc, char* argv[]) {
+	int passengerID = INTEGER(argv[1]);
 
 	int delayTime;
 	bool ridden = FALSE;
@@ -171,6 +176,7 @@ int jurassic_visitor(int argc, char* argv[]) {
 
 	SEM_WAIT(parkMutex);					SWAP
 	myPark.numInTicketLine--;			SWAP
+	myPark.numTicketsAvailable--;
 	myPark.numInMuseumLine++;			SWAP
 	SEM_SIGNAL(parkMutex);				SWAP
 
@@ -199,32 +205,15 @@ int jurassic_visitor(int argc, char* argv[]) {
 	SEM_WAIT(delay);
 
 	SEM_WAIT(getPassenger);
-
-	while(!ridden) {
-
-		if(fillSeat[0]->state == 1) {
-			SEM_WAIT(fillSeat[0]);						SWAP
-			SEM_SIGNAL(seatTaken);						SWAP
-			ridden = TRUE;										SWAP
-		}
-		else if(fillSeat[1]->state == 1) {
-			SEM_WAIT(fillSeat[1]);						SWAP
-			ridden = TRUE;										SWAP
-		}
-		else if(fillSeat[2]->state == 1) {
-			SEM_WAIT(fillSeat[2]);						SWAP
-			ridden = TRUE;										SWAP
-		}
-		else if(fillSeat[3]->state == 1) {
-			SEM_WAIT(fillSeat[3]);						SWAP
-			ridden = TRUE;										SWAP
-		}
-	}
+	loadingPassenger = delay;
+	SEM_SIGNAL(seatTaken);
 
 	SEM_WAIT(delay);
+	printf("Passenger %i is done.", passengerID);
 
-	SEM_SIGNAL(needDriver);
-	SEM_SIGNAL(wakeupDriver);
+	SEM_WAIT(parkMutex);
+	myPark.numTicketsAvailable++;
+	SEM_SIGNAL(parkMutex);
 
 	while(1) SWAP
 		//SEM_SIGNAL(enterPark);
@@ -243,11 +232,15 @@ int jurassic_driver(int argc, char* argv[]) {
 		SEM_WAIT(wakeupDriver);
 
 		if( iSEM_TRYLOCK(needDriver) ) {
-			SEM_WAIT(carReady);		SWAP;
+			printf("Driver Needed!");
+			//SEM_WAIT(carReady);		SWAP;
+			SEM_WAIT(parkMutex);
+			myPark.drivers[driverID] = loadingCar;
+			SEM_SIGNAL(parkMutex);
 			SEM_WAIT(driverDone);		SWAP;
 		}
 		else if( iSEM_TRYLOCK(needTicket) ) {
-
+			printf("Tickets Needed!");
 			SEM_WAIT(parkMutex);
 			myPark.drivers[driverID] = -1;
 			SEM_SIGNAL(parkMutex);
@@ -308,26 +301,30 @@ int jurassic_car(int argc, char* argv[]) {
 
 		// Make sure it gets loaded with 3 passengers + driver
 		while( myPark.cars[carID].passengers < NUM_SEATS ) {
-
+			printf("--------aaa--------");
 			// Wait for request to fill seat
 			SEM_WAIT(fillSeat[carID]);				SWAP
+			loadingCar = carID;
+			SEM_SIGNAL(getPassenger);
+
 
 			// Signal the passenger that we're ready for them
-			SEM_SIGNAL(getPassenger);					SWAP
+			//SEM_SIGNAL(getPassenger);					SWAP
 
 			// Wait for Passenger to claim seat
 			SEM_WAIT(seatTaken);							SWAP
 
 			// Passenger is ready
-			SEM_SIGNAL(passengerSeated);			SWAP
+			//SEM_SIGNAL(passengerSeated);			SWAP
 
 			// Is the car full?
 			if( myPark.cars[carID].passengers == NUM_SEATS )
 			{
 				// Wait for driver to be non-busy
-				SEM_WAIT(needDriver);			SWAP
+				// SEM_WAIT(needDriver);			SWAP
 
 				// Driver is available, Signal he needs to drive
+				SEM_SIGNAL(needDriver);
 				SEM_SIGNAL(wakeupDriver);				SWAP
 
 				// Signal that the car no longer needs driver
@@ -335,17 +332,31 @@ int jurassic_car(int argc, char* argv[]) {
 			}
 
 			// TODO Add passenger semaphore to queue
+			passengers[myPark.cars[carID].passengers] = loadingPassenger;
+
+			SEM_WAIT(parkMutex);
+			myPark.numInCars++;
+			myPark.numInCarLine--;
+			SEM_SIGNAL(parkMutex);
 
 			// Signal that a seat has been filled
 			// If this is the last passenger, the car will also
 			// have a driver at this point
 			SEM_SIGNAL(seatFilled[carID]);			SWAP
-
+			printf("\nFilled a seat in car %i\n",carID);
 		}
 
 		// Wait for the ride to get over. The car should leave!
-		SEM_WAIT(rideOver[myID]);            SWAP;
 
+		printf("bkkhkbkbkbkbkbkbkbkbbhbhhbhbhbbnhasdfasdfasdfasdfasdfadsfj");
+		SEM_WAIT(rideOver[carID]);            SWAP;
+		printf("bkkhkbkbkbkbkbkbkbkbbhbhhbhbhbbnhj");
+
+		int i;
+		for(i=0; i < NUM_SEATS; i++) {
+			printf("releasing %i", i);
+			SEM_SIGNAL(passengers[i]);
+		}
 		// TODO signal all passenger semaphaores
 
 	}
