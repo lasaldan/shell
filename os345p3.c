@@ -35,6 +35,7 @@ extern Semaphore* fillSeat[NUM_CARS];			// (signal) seat ready to fill
 extern Semaphore* seatFilled[NUM_CARS];		// (wait) passenger seated
 extern Semaphore* rideOver[NUM_CARS];			// (signal) ride over
 Semaphore* getPassenger;
+Semaphore* driverLoaded;
 Semaphore* seatTaken;
 Semaphore* passengerSeated;
 Semaphore* needDriver;
@@ -56,6 +57,7 @@ int jurassic_visitor(int argc, char* argv[]);
 int jurassic_driver(int argc, char* argv[]);
 
 int loadingCar;
+Semaphore* loadingDriver;
 Semaphore* loadingPassenger;
 
 
@@ -91,6 +93,7 @@ int P3_project3(int argc, char* argv[])
 	passengerSeated = createSemaphore("passengerSeated", BINARY, 0);		SWAP;
 	needDriver = createSemaphore("needDriver", BINARY, 0);		SWAP;
 	wakeupDriver = createSemaphore("wakeupDriver", BINARY, 0);		SWAP;
+	driverLoaded = createSemaphore("driverLoaded", BINARY, 0);		SWAP;
 
 	needTicket = createSemaphore("needTicket", COUNTING, 0);
  	takeTicket = createSemaphore("takeTicket", BINARY, 0);
@@ -100,7 +103,6 @@ int P3_project3(int argc, char* argv[])
 	museum = createSemaphore("museum", COUNTING, MAX_IN_MUSEUM);
 
 	loadingCar = 0;
-
 
 	static char* car1Argv[] = {"carA","0"};
 	createTask("CarA", jurassic_car, MED_PRIORITY, 2, car1Argv);
@@ -114,7 +116,7 @@ int P3_project3(int argc, char* argv[])
 	static char* car4Argv[] = {"carD","3"};
 	createTask("CarD", jurassic_car, MED_PRIORITY, 2, car4Argv);
 
-	for(i = 0; i < 12; i++) {
+	for(i = 0; i < 45; i++) {
 		char* newArgv[2];
 		sprintf(buf, "visitor%i", i);
 		newArgv[0] = buf;
@@ -209,10 +211,30 @@ int jurassic_visitor(int argc, char* argv[]) {
 	SEM_SIGNAL(seatTaken);
 
 	SEM_WAIT(delay);
-	printf("Passenger %i is done.", passengerID);
 
 	SEM_WAIT(parkMutex);
+	myPark.numInCars--;
 	myPark.numTicketsAvailable++;
+	myPark.numInGiftLine++;
+	SEM_SIGNAL(parkMutex);
+
+	delayTime = rand() % 3;
+	insertDeltaClock(delayTime, delay);
+	SEM_WAIT(delay);
+
+	SEM_WAIT(parkMutex);
+	myPark.numInGiftShop++;
+	myPark.numInGiftLine--;
+	SEM_SIGNAL(parkMutex);
+
+	delayTime = rand() % 3;
+	insertDeltaClock(delayTime, delay);
+	SEM_WAIT(delay);
+
+	SEM_WAIT(parkMutex);
+	myPark.numExitedPark++;
+	myPark.numInGiftShop--;
+	myPark.numInPark--;
 	SEM_SIGNAL(parkMutex);
 
 	while(1) SWAP
@@ -227,7 +249,6 @@ int jurassic_driver(int argc, char* argv[]) {
 	sprintf(buf, "driverDone%d", driverID); 		SWAP;
 	driverDone = createSemaphore(buf, BINARY, 0);	SWAP;
 
-
 	while(1) {
 		SEM_WAIT(wakeupDriver);
 
@@ -237,6 +258,10 @@ int jurassic_driver(int argc, char* argv[]) {
 			SEM_WAIT(parkMutex);
 			myPark.drivers[driverID] = loadingCar;
 			SEM_SIGNAL(parkMutex);
+
+			loadingDriver = driverDone;
+			SEM_SIGNAL(driverLoaded);
+
 			SEM_WAIT(driverDone);		SWAP;
 		}
 		else if( iSEM_TRYLOCK(needTicket) ) {
@@ -291,6 +316,7 @@ int jurassic_driver(int argc, char* argv[]) {
 
 int jurassic_car(int argc, char* argv[]) {
 	int carID = INTEGER(argv[1]);
+	int i;
 	char buf[32];
 	Semaphore* passengers[3];
 	Semaphore* driver;
@@ -300,8 +326,7 @@ int jurassic_car(int argc, char* argv[]) {
 		SWAP
 
 		// Make sure it gets loaded with 3 passengers + driver
-		while( myPark.cars[carID].passengers < NUM_SEATS ) {
-			printf("--------aaa--------");
+		for(i=0; i < NUM_SEATS; i++) {
 			// Wait for request to fill seat
 			SEM_WAIT(fillSeat[carID]);				SWAP
 			loadingCar = carID;
@@ -327,6 +352,9 @@ int jurassic_car(int argc, char* argv[]) {
 				SEM_SIGNAL(needDriver);
 				SEM_SIGNAL(wakeupDriver);				SWAP
 
+				SEM_WAIT(driverLoaded);
+				driver = loadingDriver;
+
 				// Signal that the car no longer needs driver
 				SEM_SIGNAL(needDriver);		SWAP
 			}
@@ -343,20 +371,16 @@ int jurassic_car(int argc, char* argv[]) {
 			// If this is the last passenger, the car will also
 			// have a driver at this point
 			SEM_SIGNAL(seatFilled[carID]);			SWAP
-			printf("\nFilled a seat in car %i\n",carID);
 		}
 
 		// Wait for the ride to get over. The car should leave!
-
-		printf("bkkhkbkbkbkbkbkbkbkbbhbhhbhbhbbnhasdfasdfasdfasdfasdfadsfj");
 		SEM_WAIT(rideOver[carID]);            SWAP;
-		printf("bkkhkbkbkbkbkbkbkbkbbhbhhbhbhbbnhj");
 
-		int i;
 		for(i=0; i < NUM_SEATS; i++) {
-			printf("releasing %i", i);
 			SEM_SIGNAL(passengers[i]);
 		}
+
+		SEM_SIGNAL(driver);
 		// TODO signal all passenger semaphaores
 
 	}
