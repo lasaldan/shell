@@ -86,7 +86,7 @@ int P3_project3(int argc, char* argv[])
 
 	// wait for park to get initialized...
 	while (!parkMutex) SWAP;
-	printf("\nStart Jurassic Park...");
+	printf("\nStart Jurassic Park...");		SWAP;
 	//myPark.numInCarLine = myPark.numInPark = 4;
 
 
@@ -97,47 +97,47 @@ int P3_project3(int argc, char* argv[])
 	wakeupDriver = createSemaphore("wakeupDriver", COUNTING, 0);		SWAP;
 	driverLoaded = createSemaphore("driverLoaded", BINARY, 0);		SWAP;
 
-	sellingTicket = createSemaphore("sellingTicket", BINARY, 1);
-	needTicket = createSemaphore("needTicket", COUNTING, 0);
- 	takeTicket = createSemaphore("takeTicket", BINARY, 0);
-	enterPark = createSemaphore("enterPark", COUNTING, 0);
-	tickets = createSemaphore("tickets", COUNTING, MAX_TICKETS);
+	sellingTicket = createSemaphore("sellingTicket", BINARY, 1);		SWAP;
+	needTicket = createSemaphore("needTicket", COUNTING, 0);		SWAP;
+ 	takeTicket = createSemaphore("takeTicket", BINARY, 0);		SWAP;
+	enterPark = createSemaphore("enterPark", COUNTING, 0);		SWAP;
+	tickets = createSemaphore("tickets", COUNTING, MAX_TICKETS);		SWAP;
 
-	museum = createSemaphore("museum", COUNTING, MAX_IN_MUSEUM);
-	giftShop = createSemaphore("giftShop", COUNTING, MAX_IN_GIFTSHOP);
+	museum = createSemaphore("museum", COUNTING, MAX_IN_MUSEUM);		SWAP;
+	giftShop = createSemaphore("giftShop", COUNTING, MAX_IN_GIFTSHOP);		SWAP;
 
-	loadingCar = 0;
+	loadingCar = 0;		SWAP;
 
-	static char* car1Argv[] = {"carA","0"};
-	createTask("CarA", jurassic_car, MED_PRIORITY, 2, car1Argv);
+	static char* car1Argv[] = {"carA","0"};		SWAP;
+	createTask("CarA", jurassic_car, MED_PRIORITY, 2, car1Argv);		SWAP;
 
-	static char* car2Argv[] = {"carB","1"};
-	createTask("CarB", jurassic_car, MED_PRIORITY, 2, car2Argv);
+	static char* car2Argv[] = {"carB","1"};		SWAP;
+	createTask("CarB", jurassic_car, MED_PRIORITY, 2, car2Argv);		SWAP;
 
-	static char* car3Argv[] = {"carC","2"};
-	createTask("CarC", jurassic_car, MED_PRIORITY, 2, car3Argv);
+	static char* car3Argv[] = {"carC","2"};		SWAP;
+	createTask("CarC", jurassic_car, MED_PRIORITY, 2, car3Argv);		SWAP;
 
-	static char* car4Argv[] = {"carD","3"};
-	createTask("CarD", jurassic_car, MED_PRIORITY, 2, car4Argv);
+	static char* car4Argv[] = {"carD","3"};		SWAP;
+	createTask("CarD", jurassic_car, MED_PRIORITY, 2, car4Argv);		SWAP;
 
 	for(i = 0; i < 45; i++) {
-		char* newArgv[2];
-		sprintf(buf, "visitor%i", i);
-		newArgv[0] = buf;
-		char id[3];
-		sprintf(id, "%i", i);
-		newArgv[1] = id;
-		createTask(buf, jurassic_visitor, MED_PRIORITY, 2, newArgv);
+		char* newArgv[2];		SWAP;
+		sprintf(buf, "visitor%i", i);		SWAP;
+		newArgv[0] = buf;		SWAP;
+		char id[3];		SWAP;
+		sprintf(id, "%i", i);		SWAP;
+		newArgv[1] = id;		SWAP;
+		createTask(buf, jurassic_visitor, MED_PRIORITY, 2, newArgv);		SWAP;
 	}
 
-	static char* dr0Argv[] = {"driver0", "0"};
-	createTask("driver0", jurassic_driver, MED_PRIORITY, 2, dr0Argv);
-	static char* dr1Argv[] = {"driver1", "1"};
-	createTask("driver1", jurassic_driver, MED_PRIORITY, 2, dr1Argv);
-	static char* dr2Argv[] = {"driver2", "2"};
-	createTask("driver2", jurassic_driver, MED_PRIORITY, 2, dr2Argv);
-	static char* dr3Argv[] = {"driver3", "3"};
-	createTask("driver3", jurassic_driver, MED_PRIORITY, 2, dr3Argv);
+	static char* dr0Argv[] = {"driver0", "0"};		SWAP;
+	createTask("driver0", jurassic_driver, MED_PRIORITY, 2, dr0Argv);		SWAP;
+	static char* dr1Argv[] = {"driver1", "1"};		SWAP;
+	createTask("driver1", jurassic_driver, MED_PRIORITY, 2, dr1Argv);		SWAP;
+	static char* dr2Argv[] = {"driver2", "2"};		SWAP;
+	createTask("driver2", jurassic_driver, MED_PRIORITY, 2, dr2Argv);		SWAP;
+	static char* dr3Argv[] = {"driver3", "3"};		SWAP;
+	createTask("driver3", jurassic_driver, MED_PRIORITY, 2, dr3Argv);		SWAP;
 
 
 	return 0;
@@ -170,9 +170,9 @@ int jurassic_visitor(int argc, char* argv[]) {
 	myPark.numInTicketLine++;			SWAP
 	SEM_SIGNAL(parkMutex);				SWAP
 
-	delayTime = rand() % 3;
-	insertDeltaClock( delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock( delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
 	SEM_SIGNAL(needTicket);				SWAP
 	SEM_SIGNAL(wakeupDriver);			SWAP
@@ -184,70 +184,68 @@ int jurassic_visitor(int argc, char* argv[]) {
 	myPark.numInMuseumLine++;			SWAP
 	SEM_SIGNAL(parkMutex);				SWAP
 
-	delayTime = rand() % 3;
-	insertDeltaClock( delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock( delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(museum);
+	SEM_WAIT(museum);		SWAP;
 	SEM_WAIT(parkMutex);					SWAP
 	myPark.numInMuseumLine--;			SWAP
 	myPark.numInMuseum++;					SWAP
 	SEM_SIGNAL(parkMutex);				SWAP
-	SEM_SIGNAL(museum);
+	SEM_SIGNAL(museum);		SWAP;
 
-	delayTime = rand() % 3;
-	insertDeltaClock( delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock( delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(parkMutex);
-	myPark.numInMuseum--;
-	myPark.numInCarLine++;
-	SEM_SIGNAL(parkMutex);
+	SEM_WAIT(parkMutex);		SWAP;
+	myPark.numInMuseum--;		SWAP;
+	myPark.numInCarLine++;		SWAP;
+	SEM_SIGNAL(parkMutex);		SWAP;
 
-	delayTime = rand() % 3;
-	insertDeltaClock(delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock(delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(getPassenger);
-	loadingPassenger = delay;
-	SEM_SIGNAL(seatTaken);
+	SEM_WAIT(getPassenger);		SWAP;
+	loadingPassenger = delay;		SWAP;
+	SEM_SIGNAL(seatTaken);		SWAP;
 
 
-	SEM_WAIT(parkMutex);
-	myPark.numTicketsAvailable++;
-	SEM_SIGNAL(parkMutex);
-	SEM_SIGNAL(tickets); // ??????
+	SEM_WAIT(parkMutex);		SWAP;
+	myPark.numTicketsAvailable++;		SWAP;
+	SEM_SIGNAL(parkMutex);		SWAP;
+	SEM_SIGNAL(tickets); 		SWAP;// ??????		SWAP;
 
-	SEM_WAIT(delay);
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(parkMutex);
-	myPark.numInCars--;
-	myPark.numInGiftLine++;
-	SEM_SIGNAL(parkMutex);
+	SEM_WAIT(parkMutex);		SWAP;
+	myPark.numInCars--;		SWAP;
+	myPark.numInGiftLine++;		SWAP;
+	SEM_SIGNAL(parkMutex);		SWAP;
 
-	delayTime = rand() % 3;
-	insertDeltaClock(delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock(delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(giftShop);
-	SEM_WAIT(parkMutex);
-	myPark.numInGiftShop++;
-	myPark.numInGiftLine--;
-	SEM_SIGNAL(parkMutex);
-	SEM_SIGNAL(giftShop);
+	SEM_WAIT(giftShop);		SWAP;
+	SEM_WAIT(parkMutex);		SWAP;
+	myPark.numInGiftShop++;		SWAP;
+	myPark.numInGiftLine--;		SWAP;
+	SEM_SIGNAL(parkMutex);		SWAP;
+	SEM_SIGNAL(giftShop);		SWAP;
 
-	delayTime = rand() % 3;
-	insertDeltaClock(delayTime, delay);
-	SEM_WAIT(delay);
+	delayTime = rand() % 3;		SWAP;
+	insertDeltaClock(delayTime, delay);		SWAP;
+	SEM_WAIT(delay);		SWAP;
 
-	SEM_WAIT(parkMutex);
-	myPark.numExitedPark++;
-	myPark.numInGiftShop--;
-	myPark.numInPark--;
-	SEM_SIGNAL(parkMutex);
+	SEM_WAIT(parkMutex);		SWAP;
+	myPark.numExitedPark++;		SWAP;
+	myPark.numInGiftShop--;		SWAP;
+	myPark.numInPark--;		SWAP;
+	SEM_SIGNAL(parkMutex);		SWAP;
 
-	while(1) SWAP
-		//SEM_SIGNAL(enterPark);
 	return 0;
 }
 
@@ -259,47 +257,47 @@ int jurassic_driver(int argc, char* argv[]) {
 	driverDone = createSemaphore(buf, BINARY, 0);	SWAP;
 
 	while(1) {
-		SEM_WAIT(wakeupDriver);
+		SEM_WAIT(wakeupDriver);		SWAP;
 
 		if( iSEM_TRYLOCK(needDriver) ) {
 
-			loadingDriver = driverDone;
-			SEM_SIGNAL(driverLoaded);
+			loadingDriver = driverDone;		SWAP;
+			SEM_SIGNAL(driverLoaded);		SWAP;
 
-			SEM_WAIT(parkMutex);
-			myPark.drivers[driverID] = loadingCar;
-			SEM_SIGNAL(parkMutex);
+			SEM_WAIT(parkMutex);		SWAP;
+			myPark.drivers[driverID] = loadingCar + 1;		SWAP;
+			SEM_SIGNAL(parkMutex);		SWAP;
 
 			SEM_WAIT(driverDone);		SWAP;
 
-			SEM_WAIT(parkMutex);
-			myPark.drivers[driverID] = 0;
-			SEM_SIGNAL(parkMutex);
+			SEM_WAIT(parkMutex);		SWAP;
+			myPark.drivers[driverID] = 0;		SWAP;
+			SEM_SIGNAL(parkMutex);		SWAP;
 		}
 		else if( iSEM_TRYLOCK(needTicket) ) {
 			//printf("Tickets Needed!");
 
 			// Is someone else selling a ticket?
-			SEM_WAIT(sellingTicket);
+			SEM_WAIT(sellingTicket);		SWAP;
 
-			SEM_WAIT(parkMutex);
-			myPark.drivers[driverID] = -1;
-			SEM_SIGNAL(parkMutex);
+			SEM_WAIT(parkMutex);		SWAP;
+			myPark.drivers[driverID] = -1;		SWAP;
+			SEM_SIGNAL(parkMutex);		SWAP;
 
 			// Wait for an available ticket
-			SEM_WAIT(tickets);
+			SEM_WAIT(tickets);		SWAP;
 
 			// Signal the visitor to take the ticket
-			SEM_SIGNAL(takeTicket);
+			SEM_SIGNAL(takeTicket);		SWAP;
 
-			SEM_WAIT(parkMutex);
-			myPark.drivers[driverID] = 0;
-			SEM_SIGNAL(parkMutex);
+			SEM_WAIT(parkMutex);		SWAP;
+			myPark.drivers[driverID] = 0;		SWAP;
+			SEM_SIGNAL(parkMutex);		SWAP;
 
-			SEM_SIGNAL(sellingTicket);
+			SEM_SIGNAL(sellingTicket);		SWAP;
 		}
 		else {
-			printf("What!?!?\n");
+			printf("What!?!?\n");		SWAP;
 		}
 	}
 
@@ -341,14 +339,13 @@ int jurassic_car(int argc, char* argv[]) {
 
 	// Start up the infinite car
 	while(1) {
-		SWAP
 
 		// Make sure it gets loaded with 3 passengers + driver
 		for(i=0; i < NUM_SEATS; i++) {
 			// Wait for request to fill seat
 			SEM_WAIT(fillSeat[carID]);				SWAP
-			loadingCar = carID;
-			SEM_SIGNAL(getPassenger);
+			loadingCar = carID;		SWAP;
+			SEM_SIGNAL(getPassenger);		SWAP;
 
 
 			// Signal the passenger that we're ready for them
@@ -367,21 +364,21 @@ int jurassic_car(int argc, char* argv[]) {
 				// SEM_WAIT(needDriver);			SWAP
 
 				// Driver is available, Signal he needs to drive
-				SEM_SIGNAL(needDriver);
+				SEM_SIGNAL(needDriver);		SWAP;
 				SEM_SIGNAL(wakeupDriver);				SWAP
-				SEM_WAIT(driverLoaded);
-				driver = loadingDriver;
+				SEM_WAIT(driverLoaded);		SWAP;
+				driver = loadingDriver;		SWAP;
 
 				// Signal that the car no longer needs driver
 				//SEM_SIGNAL(needDriver);		SWAP
 			}
 
-			passengers[i] = loadingPassenger;
+			passengers[i] = loadingPassenger;		SWAP;
 
-			SEM_WAIT(parkMutex);
-			myPark.numInCars++;
-			myPark.numInCarLine--;
-			SEM_SIGNAL(parkMutex);
+			SEM_WAIT(parkMutex);		SWAP;
+			myPark.numInCars++;		SWAP;
+			myPark.numInCarLine--;		SWAP;
+			SEM_SIGNAL(parkMutex);		SWAP;
 
 			// Signal that a seat has been filled
 			// If this is the last passenger, the car will also
@@ -393,10 +390,10 @@ int jurassic_car(int argc, char* argv[]) {
 		SEM_WAIT(rideOver[carID]);            SWAP;
 
 		for(i=0; i < NUM_SEATS; i++) {
-			SEM_SIGNAL(passengers[i]);
+			SEM_SIGNAL(passengers[i]);		SWAP;
 		}
 
-		SEM_SIGNAL(driver);
+		SEM_SIGNAL(driver);		SWAP;
 
 	}
 
