@@ -218,11 +218,18 @@ static int scheduler()
 {
 	int nextTask;
 
-	nextTask = deque(rq, -1);
+	if( scheduler_mode == 0 ) {
+		// Round Robin Scheduling
+		nextTask = deque(rq, -1);
 
-	if (nextTask >= 0)
-	{
-		enque(rq, nextTask, tcb[nextTask].priority);
+		if (nextTask >= 0)
+		{
+			enque(rq, nextTask, tcb[nextTask].priority);
+		}
+	}
+	else {
+		// Fair Scheduling
+
 	}
 
 	if (tcb[nextTask].signal & mySIGSTOP) return -1;
