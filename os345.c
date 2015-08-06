@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
 //
 static int scheduler()
 {
-	int nextTask;
+	int nextTask, i, j, sibCount, percent, timeSlice;
 
 	if( scheduler_mode == 0 ) {
 		// Round Robin Scheduling
@@ -228,12 +228,54 @@ static int scheduler()
 		}
 	}
 	else {
-		// Fair Scheduling
+		bool found = FALSE;
+		// Fair Scheduling - look for non-zero task to schedule
+		for(i=1; i < rq[0]; i++) {
+			if(tcb[rq[i]].time > 0) {
+				nextTask = rq[i];
+				tcb[rq[i]].time--;
+				found = TRUE;
+				break;
+			}
+		}
 
+		if(! found) {
+			// didn't find a task. All are 0. Loop through to find a possible parent
+			for(i=1; i < rq[0]; i++) {
+				// Has this task already been alloted time this pass?
+				if(tcb[i].time == 0) {
+					// If not, lets check if it has any siblings
+					sibCount = 0;
+					for(j=1; j < rq[0]; j++) {
+						if(tcb[j].parent == i) {
+							sibCount++;
+						}
+					}
+
+					if(sibCount == 0)
+						continue;
+
+					// we've counted all the siblings
+					percent = 100/NUM_PARENTS;
+					timeSlice = percent / sibCount;
+
+					// Set sibling timeSlices
+					for(j=1; j < rq[0]; j++) {
+						if(tcb[j].parent == i) {
+							tcb[j].time = timeSlice;
+						}
+					}
+
+					// set parent timeSlices
+					tcb[i].time = percent % sibCount;
+				}
+			}
+			nextTask = rq[1]; // Give shell an occasional run
+		}
 	}
 
 	if (tcb[nextTask].signal & mySIGSTOP) return -1;
-
+	//printf("(%i)", nextTask);
 	return nextTask;
 
 } // end scheduler

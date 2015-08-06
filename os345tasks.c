@@ -72,6 +72,7 @@ int createTask(char* name,						// task name
 			tcb[tid].priority = priority;	// task priority
 			tcb[tid].parent = curTask;		// parent
 			tcb[tid].argc = argc;			// argument count
+			tcb[tid].time = 1;
 
 			// malloc new argv parameters
 			for(i=0; i < argc; i++)
