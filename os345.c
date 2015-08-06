@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
 //
 static int scheduler()
 {
-	int nextTask, i, j, sibCount, percent, timeSlice;
+	int nextTask, i, j, childCount, percent, timeSlice;
 
 	if( scheduler_mode == 0 ) {
 		// Round Robin Scheduling
@@ -230,7 +230,7 @@ static int scheduler()
 	else {
 		bool found = FALSE;
 		// Fair Scheduling - look for non-zero task to schedule
-		for(i=1; i < rq[0]; i++) {
+		for(i=1; i <= rq[0]; i++) {
 			if(tcb[rq[i]].time > 0) {
 				nextTask = rq[i];
 				tcb[rq[i]].time--;
@@ -241,33 +241,35 @@ static int scheduler()
 
 		if(! found) {
 			// didn't find a task. All are 0. Loop through to find a possible parent
-			for(i=1; i < rq[0]; i++) {
+			for(i=1; i <= rq[0]; i++) {
 				// Has this task already been alloted time this pass?
-				if(tcb[i].time == 0) {
-					// If not, lets check if it has any siblings
-					sibCount = 0;
-					for(j=1; j < rq[0]; j++) {
-						if(tcb[j].parent == i) {
-							sibCount++;
+				if(tcb[rq[i]].time == 0) {
+					// If not, lets check if it has any children
+					childCount = 0;
+					for(j=1; j <= rq[0]; j++) {
+						if(tcb[rq[j]].parent == rq[i]) {
+							childCount++;
 						}
 					}
 
-					if(sibCount == 0)
+					if((childCount == 0)) {
+						tcb[rq[i]].time = 1;
 						continue;
+					}
 
 					// we've counted all the siblings
 					percent = 100/NUM_PARENTS;
-					timeSlice = percent / sibCount;
+					timeSlice = percent / childCount;
 
 					// Set sibling timeSlices
-					for(j=1; j < rq[0]; j++) {
-						if(tcb[j].parent == i) {
-							tcb[j].time = timeSlice;
+					for(j=1; j <= rq[0]; j++) {
+						if(tcb[rq[j]].parent == rq[i]) {
+							tcb[rq[j]].time = timeSlice;
 						}
 					}
 
 					// set parent timeSlices
-					tcb[i].time = percent % sibCount;
+					tcb[rq[i]].time = percent % childCount;
 				}
 			}
 			nextTask = rq[1]; // Give shell an occasional run
