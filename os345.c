@@ -253,7 +253,7 @@ static int scheduler()
 					}
 
 					if((childCount == 0)) {
-						tcb[rq[i]].time = 1;
+						//tcb[rq[i]].time = 1;
 						continue;
 					}
 
