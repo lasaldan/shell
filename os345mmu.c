@@ -45,63 +45,66 @@ int getAvailableFrame(void);
 
 extern int rptcl;				// Which RPT are we examining
 extern int uptcl;							// Which UPT are we examining
+int uptcl_end;
+int clearableRPT = 0;
 
 extern TCB tcb[];					// task control block
 extern int curTask;					// current task #
 
 int getFrame(int notme)
 {
-	int frame, found, rootword1, rootword2, userword1, userword2, frameEnd;
+	int frame, rootword1, rootword2, userword1, userword2, frameEnd;
+	//int frame, found;
 	frame = getAvailableFrame();
 	if (frame >=0) return frame;
 
-	found = 0;
-	while(!found) {
-		while(rptcl < LC3_RPT_END && !found) {
+	while(frame < 0) {
+		while(rptcl < LC3_RPT_END && frame < 0) {
 			rootword1 = memory[rptcl];					// FDRP__ffffffffff
 			rootword2 = memory[rptcl+1];
+
 			if(DEFINED(rootword1)) {
 				// This is a root page table
-				//printf("Page Table found at frame %p\n", rptcl);
 				if(REFERENCED(rootword1)) {
-					CLEAR_REF(rootword1);
+					if(clearableRPT) {
+						rootword1 = memory[rptcl] = CLEAR_REF(rootword1);
+						clearableRPT = 0;
+					}
+				}
+				else {
+					uptcl_end = (FRAME(rootword1)<<6) + 64;
+					if(uptcl < (FRAME(rootword1)<<6) || uptcl >= uptcl_end)
+						uptcl = (FRAME(rootword1)<<6);
 
-					uptcl = (FRAME(rootword1)<<6);
-					frameEnd = uptcl + 40;
-
-					while(uptcl < frameEnd) {
+					while(uptcl < uptcl_end && frame < 0) {
 						userword1 = memory[uptcl];
 						userword2 = memory[uptcl+1];
 
 						if(DEFINED(userword1)) {
 							if(REFERENCED(userword1)) {
-								CLEAR_REF(userword1);
-								printf("User1: %i\n",userword1);
-								printf("Addr:: %i\n",userword2);
+								userword1 = memory[uptcl] = CLEAR_REF(userword1);
 							}
 							else {
-								frame = FRAME(userword1);
-								accessPage(SWAPPAGE(memory[uptcl+1]), frame, PAGE_NEW_WRITE); 
-								found = 1;
+								if(FRAME(userword1) != notme) {
+									frame = FRAME(userword1);
+									userword1 = memory[uptcl] = 0;
+									int pagenum = accessPage(0, frame, PAGE_NEW_WRITE);
+									userword2 = memory[uptcl+1] = SET_PAGED(pagenum);
+								}
 							}
 						}
-						if(!found)
-							uptcl += 2;
+						uptcl += 2;
 					}
 				}
-				else {
-					found = 1;
-					frame = FRAME(rootword1);
-					accessPage(SWAPPAGE(memory[rootword2]), frame, PAGE_NEW_WRITE); 
-				}
 			}
-			if(!found)
-				rptcl+=2;
+			if(frame < 0) {
+				rptcl += 2;
+				clearableRPT = 1;
+			}
 		}
-		if(!found)
+		if(frame < 0)
 			rptcl = LC3_RPT;
 	}
-
 	return frame;
 }
 // **************************************************************************
@@ -125,105 +128,75 @@ int getFrame(int notme)
 
 unsigned short int *getMemAdr(int va, int rwFlg)
 {
-	unsigned short int pa;
-	int rpta, rpte1, rpte2;
-	int upta, upte1, upte2;
-	int rptFrame, uptFrame, frame;
+	unsigned short int rpta, rpte1, rpte2;
+	unsigned short int upta, upte1, upte2;
+	int i, uptFrame, dataFrame;
 
-	// turn off virtual addressing for system RAM
 	if (va < 0x3000) return &memory[va];
-#if MMU_ENABLE
 
-	/////////////////////
-	// ROOT PAGE TABLE //
-	/////////////////////
-	rpta = tcb[curTask].RPT + RPTI(va);		// root page table address
-	// rpte1 = MEMWORD(rpta);
-	// rpte2 = MEMWORD(rpta+1); 
-	rpte1 = memory[rpta];					// FDRP__ffffffffff
-	rpte2 = memory[rpta+1];					// S___pppppppppppp
-	if (DEFINED(rpte1))	{
-		// Root Page Table Exists!
-		memAccess++;
+	rpta = TASK_RPT + RPTI(va);
+	rpte1 = MEMWORD(rpta);
+	rpte2 = MEMWORD(rpta+1);
+
+	memAccess++;
+
+	if(DEFINED(rpte1)) {
 		memHits ++;
-		REFERENCED(rpte1);
+		uptFrame = FRAME(rpte1);
 	}
-	else {
-		// Need RPT
-		// 1. get a UPT frame from memory (may have to free up frame) 
-		// 2. if paged out (DEFINED) load swapped page into UPT frame 
-		// else initialize UPT 
-		frame = getFrame(-1); 
-		rpte1 = SET_DEFINED(frame); 
-		if (PAGED(rpte2))	{
-			// UPT frame paged out - read from SWAPPAGE(rpte2) into frame 
-			accessPage(SWAPPAGE(rpte2), frame, PAGE_READ); 
+
+	else
+	{
+		memPageFaults ++;
+		uptFrame = getFrame(-1);
+		rpte1 = SET_DEFINED(uptFrame);
+		if (PAGED(rpte2)) {
+			accessPage(SWAPPAGE(rpte2), uptFrame, PAGE_READ);
 		}
 		else {
-			// define new upt frame and reference from rpt 
-			//rpte1 = SET_DIRTY(rpte1);
-			//rpte1 = SET_REF(rpte1);
-			rpte2 = 0; 		// undefine all upte's 
-		}
-		memAccess++;
-		memPageFaults++;
-	}
-	// From slide - 2 lines
-	memory[rpta] = rpte1 = SET_REF(SET_PINNED(rpte1));	// set rpt frame access bit 
-	memory[rpta+1] = rpte2; 
-	//memory[rpta] = SET_REF(rpte1);			// set rpt frame access bit
-
-
-	/////////////////////
-	// USER PAGE TABLE //
-	/////////////////////
-	upta = (FRAME(rpte1)<<6) + UPTI(va);	// user page table address
-	upte1 = memory[upta]; 					// FDRP__ffffffffff
-	upte2 = memory[upta+1]; 				// S___pppppppppppp
-	if (DEFINED(upte1))	{
-		// User Page Table Exists
-		memAccess++;
-		memHits++;
-		REFERENCED(upte1);
-		//printf("%s","T");
-	}
-	else {
-		// Need UPT
-		//printf("%s","_");
-		memAccess++;
-		memPageFaults++;
-		frame = getFrame(-1); 
-		upte1 = SET_DEFINED(frame); 
-	}
-	memory[upta] = SET_REF(upte1); 			// set upt frame access bit
-	return &memory[(FRAME(upte1)<<6) + FRAMEOFFSET(va)];
-#else
-	return &memory[va];
-#endif
-
-	// From slide
-	/*
-	if (DEFINED(rpte1)) {
-		// rpte defined
-	} 
-	else {
-		// rpte undefined
-		// 1. get a UPT frame from memory (may have to free up frame) 
-		// 2. if paged out (DEFINED) load swapped page into UPT frame 
-		// else initialize UPT 
-		frame = getFrame(-1); 
-		rpte1 = SET_DEFINED(frame); 
-		if (PAGED(rpte2))	{
-			// UPT frame paged out - read from SWAPPAGE(rpte2) into frame 
-			accessPage(SWAPPAGE(rpte2), frame, PAGE_READ); 
-		}
-		else {
-			// define new upt frame and reference from rpt 
 			rpte1 = SET_DIRTY(rpte1);
-			rpte2 = 0; 		// undefine all upte's 
+			rpte2 = 0;
+			for(i=0; i<64; i++)
+				MEMWORD((uptFrame<<6) + i) = 0;
 		}
 	}
-	*/
+
+	MEMWORD(rpta) = SET_REF(SET_PINNED(rpte1));
+	MEMWORD(rpta+1) = rpte2;
+
+	upta = (FRAME(rpte1) << 6) + UPTI(va);
+	upte1 = MEMWORD(upta);
+	upte2 = MEMWORD(upta+1);
+
+	memAccess++;
+
+	if(DEFINED(upte1))
+		memHits++;
+	else {
+		memPageFaults ++;
+		dataFrame = getFrame(uptFrame);
+		upte1 = SET_DEFINED(dataFrame);
+		if (PAGED(upte2)) {
+			accessPage(SWAPPAGE(upte2), dataFrame, PAGE_READ);
+		}
+		else {
+			upte1 = SET_DIRTY(upte1);
+			upte2 = 0;
+			for(i=0; i<64; i++)
+				MEMWORD((dataFrame<<6) + i) = 0xf025;
+		}
+	}
+
+	if(rwFlg) {
+		upte1 = SET_DIRTY(upte1);
+		rpte1 = SET_DIRTY(rpte1);
+	}
+
+	MEMWORD(upta) = upte1 = SET_REF(upte1);
+	MEMWORD(upta+1) = upte2;
+
+	return &memory[(FRAME(upte1)<<6) + FRAMEOFFSET(va)];
+
 } // end getMemAdr
 
 

@@ -37,8 +37,8 @@ extern int memAccess;
 extern int memHits;
 extern int memPageFaults;
 //extern int nextPage;
-extern int pageReads;
-extern int pageWrites;
+//extern int pageReads;
+//extern int pageWrites;
 
 extern int rptcl;				// Which RPT are we examining
 extern int uptcl;							// Which UPT are we examining
