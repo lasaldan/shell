@@ -40,6 +40,9 @@ extern int memPageFaults;
 extern int pageReads;
 extern int pageWrites;
 
+extern int rptcl;				// Which RPT are we examining
+extern int uptcl;							// Which UPT are we examining
+
 extern unsigned short int memory[];
 extern int getMemoryData(int);
 
@@ -167,7 +170,7 @@ int P4_initMemory(int argc, char* argv[])
 	int highAdr = 0x8000;
 
 	tcb[curTask].RPT = 0x2400;
-
+	rptcl = LC3_RPT;
 
 	printf("\nValidate arguments...");	// ?? validate arguments
 	if (!tcb[curTask].RPT)
@@ -548,4 +551,3 @@ int P4_memtest(int argc, char* argv[])
 } // end crawler and memtest programs
 
 // **************************************************************************
-

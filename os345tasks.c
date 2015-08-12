@@ -32,6 +32,8 @@
 extern TCB tcb[];							// task control block
 extern int curTask;							// current task #
 
+#define LC3_RPT     0x2400;
+
 extern int superMode;						// system mode
 extern Semaphore* semaphoreList;			// linked list of active semaphores
 extern Semaphore* taskSems[MAX_TASKS];		// task semaphore
@@ -86,7 +88,8 @@ int createTask(char* name,						// task name
 			tcb[tid].argv = newArgv;			// argument pointers
 
 			tcb[tid].event = 0;				// suspend semaphore
-			tcb[tid].RPT = 0;					// root page table (project 5)
+			//tcb[tid].RPT = 0;					// root page table (project 5)
+			tcb[tid].RPT = LC3_RPT + ((tid) ? ((tid-1)<<6) : 0);
 			tcb[tid].cdir = CDIR;			// inherit parent cDir (project 6)
 
 			// define task signals

@@ -155,6 +155,9 @@ DeltaClock dc;
 int deltaClockSize;
 int deltaClockTicker;
 
+int rptcl;							// Which RPT are we examining
+int uptcl;							// Which UPT are we examining
+
 int enque(PriorityQueue, TID, Priority);
 int deque(PriorityQueue, TID);
 int insertDeltaClock(int time, Semaphore* sem);

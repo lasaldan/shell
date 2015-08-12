@@ -38,20 +38,69 @@ unsigned short int memory[LC3_MAX_MEMORY];
 int memAccess;						// memory accesses
 int memHits;						// memory hits
 int memPageFaults;					// memory faults
+int swapcount;
 
 int getFrame(int);
 int getAvailableFrame(void);
+
+extern int rptcl;				// Which RPT are we examining
+extern int uptcl;							// Which UPT are we examining
+
 extern TCB tcb[];					// task control block
 extern int curTask;					// current task #
 
 int getFrame(int notme)
 {
-	int frame;
+	int frame, found, rootword1, rootword2, userword1, userword2, frameEnd;
 	frame = getAvailableFrame();
 	if (frame >=0) return frame;
 
-	// run clock
-	printf("\nWe're toast!!!!!!!!!!!!");
+	found = 0;
+	while(!found) {
+		while(rptcl < LC3_RPT_END && !found) {
+			rootword1 = memory[rptcl];					// FDRP__ffffffffff
+			rootword2 = memory[rptcl+1];
+			if(DEFINED(rootword1)) {
+				// This is a root page table
+				//printf("Page Table found at frame %p\n", rptcl);
+				if(REFERENCED(rootword1)) {
+					CLEAR_REF(rootword1);
+
+					uptcl = (FRAME(rootword1)<<6);
+					frameEnd = uptcl + 40;
+
+					while(uptcl < frameEnd) {
+						userword1 = memory[uptcl];
+						userword2 = memory[uptcl+1];
+
+						if(DEFINED(userword1)) {
+							if(REFERENCED(userword1)) {
+								CLEAR_REF(userword1);
+								printf("User1: %i\n",userword1);
+								printf("Addr:: %i\n",userword2);
+							}
+							else {
+								frame = FRAME(userword1);
+								accessPage(SWAPPAGE(memory[uptcl+1]), frame, PAGE_NEW_WRITE); 
+								found = 1;
+							}
+						}
+						if(!found)
+							uptcl += 2;
+					}
+				}
+				else {
+					found = 1;
+					frame = FRAME(rootword1);
+					accessPage(SWAPPAGE(memory[rootword2]), frame, PAGE_NEW_WRITE); 
+				}
+			}
+			if(!found)
+				rptcl+=2;
+		}
+		if(!found)
+			rptcl = LC3_RPT;
+	}
 
 	return frame;
 }
@@ -69,38 +118,112 @@ int getFrame(int notme)
 //     / / / /     /                 / _________page defined
 //    / / / /     /                 / /       __page # (0-4096) (2^12)
 //   / / / /     /                 / /       /
-//  / / / /     / 	             / /       /
+//  / / / /     / 	              / /       /
 // F D R P - - f f|f f f f f f f f|S - - - p p p p|p p p p p p p p
 
-#define MMU_ENABLE	0
+#define MMU_ENABLE	1
 
 unsigned short int *getMemAdr(int va, int rwFlg)
 {
 	unsigned short int pa;
 	int rpta, rpte1, rpte2;
 	int upta, upte1, upte2;
-	int rptFrame, uptFrame;
+	int rptFrame, uptFrame, frame;
 
 	// turn off virtual addressing for system RAM
 	if (va < 0x3000) return &memory[va];
 #if MMU_ENABLE
+
+	/////////////////////
+	// ROOT PAGE TABLE //
+	/////////////////////
 	rpta = tcb[curTask].RPT + RPTI(va);		// root page table address
+	// rpte1 = MEMWORD(rpta);
+	// rpte2 = MEMWORD(rpta+1); 
 	rpte1 = memory[rpta];					// FDRP__ffffffffff
 	rpte2 = memory[rpta+1];					// S___pppppppppppp
-	if (DEFINED(rpte1))	{ }					// rpte defined
-		else			{ }					// rpte undefined
-	memory[rpta] = SET_REF(rpte1);			// set rpt frame access bit
+	if (DEFINED(rpte1))	{
+		// Root Page Table Exists!
+		memAccess++;
+		memHits ++;
+		REFERENCED(rpte1);
+	}
+	else {
+		// Need RPT
+		// 1. get a UPT frame from memory (may have to free up frame) 
+		// 2. if paged out (DEFINED) load swapped page into UPT frame 
+		// else initialize UPT 
+		frame = getFrame(-1); 
+		rpte1 = SET_DEFINED(frame); 
+		if (PAGED(rpte2))	{
+			// UPT frame paged out - read from SWAPPAGE(rpte2) into frame 
+			accessPage(SWAPPAGE(rpte2), frame, PAGE_READ); 
+		}
+		else {
+			// define new upt frame and reference from rpt 
+			//rpte1 = SET_DIRTY(rpte1);
+			//rpte1 = SET_REF(rpte1);
+			rpte2 = 0; 		// undefine all upte's 
+		}
+		memAccess++;
+		memPageFaults++;
+	}
+	// From slide - 2 lines
+	memory[rpta] = rpte1 = SET_REF(SET_PINNED(rpte1));	// set rpt frame access bit 
+	memory[rpta+1] = rpte2; 
+	//memory[rpta] = SET_REF(rpte1);			// set rpt frame access bit
 
+
+	/////////////////////
+	// USER PAGE TABLE //
+	/////////////////////
 	upta = (FRAME(rpte1)<<6) + UPTI(va);	// user page table address
 	upte1 = memory[upta]; 					// FDRP__ffffffffff
 	upte2 = memory[upta+1]; 				// S___pppppppppppp
-	if (DEFINED(upte1))	{ }					// upte defined
-		else			{ }					// upte undefined
+	if (DEFINED(upte1))	{
+		// User Page Table Exists
+		memAccess++;
+		memHits++;
+		REFERENCED(upte1);
+		//printf("%s","T");
+	}
+	else {
+		// Need UPT
+		//printf("%s","_");
+		memAccess++;
+		memPageFaults++;
+		frame = getFrame(-1); 
+		upte1 = SET_DEFINED(frame); 
+	}
 	memory[upta] = SET_REF(upte1); 			// set upt frame access bit
 	return &memory[(FRAME(upte1)<<6) + FRAMEOFFSET(va)];
 #else
 	return &memory[va];
 #endif
+
+	// From slide
+	/*
+	if (DEFINED(rpte1)) {
+		// rpte defined
+	} 
+	else {
+		// rpte undefined
+		// 1. get a UPT frame from memory (may have to free up frame) 
+		// 2. if paged out (DEFINED) load swapped page into UPT frame 
+		// else initialize UPT 
+		frame = getFrame(-1); 
+		rpte1 = SET_DEFINED(frame); 
+		if (PAGED(rpte2))	{
+			// UPT frame paged out - read from SWAPPAGE(rpte2) into frame 
+			accessPage(SWAPPAGE(rpte2), frame, PAGE_READ); 
+		}
+		else {
+			// define new upt frame and reference from rpt 
+			rpte1 = SET_DIRTY(rpte1);
+			rpte2 = 0; 		// undefine all upte's 
+		}
+	}
+	*/
 } // end getMemAdr
 
 
